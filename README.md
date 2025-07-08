@@ -22,7 +22,7 @@ Merge all Markdown files in a directory tree into a single PDF with beautiful fo
 3. Install the `mdfusion` package:
 
 ```sh
-pip install .
+pip install ./mdfusion
 ```
 
 ---
