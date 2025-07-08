@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdfusion"
-version = "0.1.7"
+version = "0.1.8"
 description = "Merge Markdown files into a single PDF with Pandoc + XeLaTeX"
 readme = "README.md"
 authors = [{ name = "ejuet" }]
 requires-python = ">=3.8"
-dependencies = ["configargparse"]
+dependencies = ["toml"]
 
 [project.scripts]
 mdfusion = "mdfusion.mdfusion:main"
