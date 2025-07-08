@@ -181,7 +181,7 @@ def main():
 
     temp_dir = Path(tempfile.mkdtemp(prefix="mdfusion_"))
     try:
-        user_header = Path(__file__).parent / "header.tex"
+        user_header = Path.cwd() / "header.tex"
         if not user_header.is_file():
             user_header = None
         hdr = build_header(user_header)
