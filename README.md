@@ -1,6 +1,6 @@
 # mdfusion
 
-Merge all Markdown files in a directory tree into a single PDF with beautiful formatting via Pandoc + XeLaTeX.
+Merge all Markdown files in a directory tree into a single PDF with formatting via Pandoc + XeLaTeX.
 
 ---
 
@@ -9,7 +9,7 @@ Merge all Markdown files in a directory tree into a single PDF with beautiful fo
 - **Recursive Markdown merge:** Collects and sorts all `.md` files under a directory (natural sort order).
 - **PDF output via Pandoc + XeLaTeX:** Produces a polished PDF with centered section headings and small margins.
 - **Title page and metadata:** Optional title page with configurable title, author, and date.
-- **Config file support:** Use a `.mdfusion` INI-style config file for repeatable builds.
+- **Config file support:** Use a `mdfusion.toml` config file for repeatable builds.
 - **Custom LaTeX header:** Inject your own LaTeX via `header.tex` if desired.
 - **Image link rewriting:** Converts relative image links to absolute paths, so identically-named images in different folders don't collide.
 
