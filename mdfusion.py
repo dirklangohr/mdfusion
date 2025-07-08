@@ -4,7 +4,7 @@ Script to merge all Markdown files under a directory into one .md, rewriting
 relative image links to absolute paths so that identically-named images
 in different folders don’t collide, then convert that merged.md → PDF via
 Pandoc + XeLaTeX with centered section headings and small margins.
-Supports optional title page with metadata.
+Supports optional title page with metadata, plus config-file support.
 """
 
 import sys
@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 import shutil
 import getpass
+import configparser
 from pathlib import Path
 from datetime import date
 
@@ -29,7 +30,6 @@ def find_markdown_files(root_dir: Path) -> list[Path]:
     md_paths = list(root_dir.rglob('*.md'))
     md_paths.sort(key=lambda p: natural_key(str(p.relative_to(root_dir))))
     return md_paths
-
 
 def build_header(header_tex: Path | None = None) -> Path:
     """
@@ -59,7 +59,6 @@ def build_header(header_tex: Path | None = None) -> Path:
     tmp.close()
     return hdr_path
 
-
 def create_metadata(title: str, author: str) -> str:
     """
     Build a Pandoc‐style YAML metadata block for a title page.
@@ -72,7 +71,6 @@ def create_metadata(title: str, author: str) -> str:
         f"date: \"{today}\"\n"
         f"---\n\n"
     )
-
 
 def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None:
     """
@@ -96,7 +94,6 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
             out.write(fixed_text)
             out.write("\n\n")
 
-
 def main():
     import argparse
 
@@ -104,8 +101,10 @@ def main():
         description='Merge all Markdown files under a directory into one PDF, '
                     'with optional title page, per-file section headings, image-link rewriting, small margins.'
     )
-    parser.add_argument('root_dir', type=Path,
-                        help='Root directory to search for Markdown files')
+    parser.add_argument('-c', '--config', type=Path,
+                        help='Path to a .mdfusion INI-style config file')
+    parser.add_argument('root_dir', nargs='?', type=Path,
+                        help='Root directory to search for Markdown files (required unless --config specifies everything)')
     parser.add_argument('-o', '--output', default=None,
                         help='Output PDF filename (defaults to <root_dir>.pdf)')
     parser.add_argument('--no-toc', action='store_true',
@@ -120,6 +119,48 @@ def main():
     # Capture unknown args to forward to Pandoc
     args, pandoc_args = parser.parse_known_args()
 
+    # --- CONFIG FILE LOADING ------------------------------------------------
+    cfg_path = None
+    # 1) If user explicitly passed --config
+    if args.config:
+        cfg_path = args.config
+    # 2) If no args at all (len == 1), look for ./​.mdfusion
+    elif len(sys.argv) == 1:
+        cfg_path = Path.cwd() / '.mdfusion'
+
+    if cfg_path:
+        if not cfg_path.is_file():
+            print(f"Config file not found: {cfg_path}", file=sys.stderr)
+            sys.exit(1)
+        cfg = configparser.ConfigParser()
+        cfg.read(cfg_path)
+        if 'mdfusion' not in cfg:
+            print(f"[mdfusion] section missing in {cfg_path}", file=sys.stderr)
+            sys.exit(1)
+        conf = cfg['mdfusion']
+        # Only set a value if it wasn't passed on CLI
+        if not args.root_dir and 'root_dir' in conf:
+            args.root_dir = Path(conf['root_dir'])
+        if not args.output and 'output' in conf:
+            args.output = conf['output']
+        if not args.no_toc and conf.getboolean('no_toc', fallback=False):
+            args.no_toc = True
+        if not args.title_page and conf.getboolean('title_page', fallback=False):
+            args.title_page = True
+        if not args.title and 'title' in conf:
+            args.title = conf['title']
+        if not args.author and 'author' in conf:
+            args.author = conf['author']
+        # allow extra pandoc args in config, whitespace-separated
+        if 'pandoc_args' in conf:
+            pandoc_args += conf['pandoc_args'].split()
+
+    # root_dir is now required
+    if not args.root_dir:
+        parser.error("you must specify root_dir (or provide it in the config file)")
+
+    # -------------------------------------------------------------------------
+
     md_files = find_markdown_files(args.root_dir)
     if not md_files:
         print(f"No Markdown files found in {args.root_dir}", file=sys.stderr)
@@ -127,7 +168,7 @@ def main():
 
     title = args.title or args.root_dir.name
     author = args.author or getpass.getuser()
-    metadata = create_metadata(title, author) if args.title_page or args.title or args.author else ""
+    metadata = create_metadata(title, author) if (args.title_page or args.title or args.author) else ""
 
     temp_dir = Path(tempfile.mkdtemp(prefix='md2pdf_'))
     try:
@@ -160,8 +201,8 @@ def main():
             print(f"Merged PDF written to {out_pdf}")
         except subprocess.CalledProcessError as e:
             err = e.stderr or ''
-            # match both Pandoc's unknown and unrecognized option errors
-            m = (re.search(r"unrecognized option `([^']+)'", err) or re.search(r"Unknown option (--\S+)", err))
+            m = (re.search(r"unrecognized option `([^']+)'", err)
+                 or re.search(r"Unknown option (--\S+)", err))
             if m:
                 bad_arg = m.group(1)
                 print(
@@ -171,12 +212,12 @@ def main():
                     file=sys.stderr
                 )
             else:
-                # fallback to raw stderr
                 print(err.strip(), file=sys.stderr)
             sys.exit(1)
 
     finally:
         shutil.rmtree(temp_dir)
+
 
 if __name__ == '__main__':
     main()
