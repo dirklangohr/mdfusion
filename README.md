@@ -61,7 +61,7 @@ mdfusion --title-page --title "My Book" --author "Jane Doe" docs/
 
 ## Configuration file
 
-You can create a `.mdfusion` file in your project directory:
+You can create a `mdfusion.toml` file in your project directory:
 
 ```ini
 [mdfusion]
