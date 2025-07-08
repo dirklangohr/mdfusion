@@ -4,12 +4,26 @@ from datetime import date
 
 import pytest
 
-from mdfusion import natural_key, find_markdown_files, build_header, create_metadata, merge_markdown
+from mdfusion import (
+    natural_key,
+    find_markdown_files,
+    build_header,
+    create_metadata,
+    merge_markdown,
+)
+
 
 def test_natural_key_sorts_correctly():
     items = ["file2.md", "file10.md", "file1.md", "File20.md", "file3.md"]
     sorted_items = sorted(items, key=natural_key)
-    assert sorted_items == ["file1.md", "file2.md", "file3.md", "file10.md", "File20.md"]
+    assert sorted_items == [
+        "file1.md",
+        "file2.md",
+        "file3.md",
+        "file10.md",
+        "File20.md",
+    ]
+
 
 def test_find_markdown_files(tmp_path):
     # create nested structure
@@ -26,6 +40,7 @@ def test_find_markdown_files(tmp_path):
     rel = [p.relative_to(root).as_posix() for p in found]
     assert rel == ["1.md", "2.md", "10.md", "a/3.md", "b/11.md"]
 
+
 def test_build_header_without_user(tmp_path):
     hdr_path = build_header(None)
     content = hdr_path.read_text(encoding="utf-8")
@@ -35,6 +50,7 @@ def test_build_header_without_user(tmp_path):
     # no user header markers
     assert "% --- begin user header.tex ---" not in content
     hdr_path.unlink()
+
 
 def test_build_header_with_user(tmp_path):
     # create a fake user header.tex
@@ -48,6 +64,7 @@ def test_build_header_with_user(tmp_path):
     assert "% --- end user header.tex ---" in content
     hdr_path.unlink()
 
+
 def test_create_metadata_includes_fields_and_today():
     title = "My Title"
     author = "Jane Doe"
@@ -59,6 +76,7 @@ def test_create_metadata_includes_fields_and_today():
     assert f'author: "{author}"' in md
     assert f'date: "{today}"' in md
     assert md.endswith("\n\n")
+
 
 def test_merge_markdown_rewrites_image_links_and_adds_pages(tmp_path):
     # setup two markdown files with relative images
@@ -89,8 +107,9 @@ def test_merge_markdown_rewrites_image_links_and_adds_pages(tmp_path):
     abs1 = str((md1.parent / "pic.png").resolve())
     abs2 = str((md2.parent / "pic.png").resolve())
     # regex to find rewritten links
-    assert re.search(rf'!\[A pic\]\({re.escape(abs1)}\)', out)
-    assert re.search(rf'!\[Another\]\({re.escape(abs2)}\)', out)
+    assert re.search(rf"!\[A pic\]\({re.escape(abs1)}\)", out)
+    assert re.search(rf"!\[Another\]\({re.escape(abs2)}\)", out)
+
 
 def test_merge_without_metadata(tmp_path):
     # one empty md

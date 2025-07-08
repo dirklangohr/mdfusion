@@ -16,7 +16,8 @@ def test_with_config(tmp_path, monkeypatch, capsys):
 
     # 2) Write a .mdfusion config in the cwd
     cfg = tmp_path / ".mdfusion"
-    cfg.write_text(f"""\
+    cfg.write_text(
+        f"""\
 [mdfusion]
 root_dir = {docs}
 output = my-book.pdf
@@ -25,17 +26,23 @@ title_page = true
 title = Config Title
 author = Config Author
 pandoc_args = --number-sections
-""")
+"""
+    )
 
     # 3) chdir into tmp_path so script sees ./​.mdfusion
     monkeypatch.chdir(tmp_path)
 
     # 4) Stub out subprocess.run to capture the cmd
     captured = {}
+
     def fake_run(cmd, check, capture_output, text):
-        captured['cmd'] = cmd
-        class Result: pass
+        captured["cmd"] = cmd
+
+        class Result:
+            pass
+
         return Result()
+
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     # 5) Call main() with no args → picks up config
@@ -46,7 +53,7 @@ pandoc_args = --number-sections
     out = capsys.readouterr().out
     assert "Merged PDF written to my-book.pdf" in out
 
-    cmd = captured.get('cmd', [])
+    cmd = captured.get("cmd", [])
     # Should start with pandoc and merged.md → my-book.pdf
     assert cmd[0] == "pandoc"
     assert "-o" in cmd and "my-book.pdf" in cmd
