@@ -88,7 +88,7 @@ def main():
             cfg_path = Path(sys.argv[i + 1])
             break
     if cfg_path is None:
-        default_cfg = Path.cwd() / ".mdfusion"
+        default_cfg = Path.cwd() / "mdfusion.toml"
         if default_cfg.is_file():
             cfg_path = default_cfg
     manual_defaults: dict = {}

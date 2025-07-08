@@ -15,7 +15,7 @@ def test_with_config(tmp_path, monkeypatch, capsys):
     (docs / "b.md").write_text("# Second\n\nWorld")
 
     # 2) Write a .mdfusion config in the cwd
-    cfg = tmp_path / ".mdfusion"
+    cfg = tmp_path / "mdfusion.toml"
     cfg.write_text(
         f"""\
 [mdfusion]
@@ -23,8 +23,8 @@ root_dir = {docs}
 output = my-book.pdf
 no_toc = true
 title_page = true
-title = Config Title
-author = Config Author
+title = "Config Title"
+author = "Config Author"
 pandoc_args = --number-sections
 """
     )
