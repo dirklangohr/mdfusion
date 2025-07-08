@@ -17,6 +17,14 @@ Merge all Markdown files in a directory tree into a single PDF with beautiful fo
 
 ## Installation
 
+### Install via pip
+
+```sh
+pip install mdfusion
+```
+
+### Install from source
+
 1. **Clone this repo**
 2. Install Python 3.8+ and [Pandoc](https://pandoc.org/) with XeLaTeX support
 3. Install the `mdfusion` package:
