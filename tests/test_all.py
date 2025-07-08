@@ -3,7 +3,7 @@ from datetime import date
 
 import pytest
 
-from mdfusion import (
+from mdfusion.mdfusion import (
     natural_key,
     find_markdown_files,
     build_header,

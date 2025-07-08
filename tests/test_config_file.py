@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import mdfusion
+import mdfusion.mdfusion as mdfusion
 
 
 def test_with_config(tmp_path, monkeypatch, capsys):
