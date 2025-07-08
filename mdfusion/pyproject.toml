@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mdfusion"
+version = "0.1.0"
+description = "Merge Markdown files into a single PDF with Pandoc + XeLaTeX"
+readme = "README.md"
+authors = [{ name = "ejuet" }]
+requires-python = ">=3.8"
+dependencies = ["configargparse"]
+
+[project.scripts]
+mdfusion = "mdfusion:main"
+
+
+# [tool.setuptools.package-data]
+# "mdfusion" = ["header.tex"]
