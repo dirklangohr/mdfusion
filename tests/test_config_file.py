@@ -19,13 +19,13 @@ def test_with_config(tmp_path, monkeypatch, capsys):
     cfg.write_text(
         f"""\
 [mdfusion]
-root_dir = {docs}
-output = my-book.pdf
+root_dir = "{docs.as_posix()}"
+output = "my-book.pdf"
 no_toc = true
 title_page = true
 title = "Config Title"
 author = "Config Author"
-pandoc_args = --number-sections
+pandoc_args = "--number-sections"
 """
     )
 

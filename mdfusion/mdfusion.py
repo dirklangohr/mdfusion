@@ -16,7 +16,10 @@ import getpass
 from pathlib import Path
 from datetime import date
 import configargparse
-import configparser
+
+import toml as tomllib  # type: ignore
+
+_TOML_BINARY = False
 
 # Regex to find Markdown image links that are NOT already URLs
 IMAGE_RE = re.compile(r"!\[([^\]]*)\]\((?!https?://)([^)]+)\)")
@@ -93,24 +96,27 @@ def main():
             cfg_path = default_cfg
     manual_defaults: dict = {}
     if cfg_path and cfg_path.is_file():
-        cp = configparser.ConfigParser()
-        cp.read(cfg_path)
-        if "mdfusion" in cp:
-            conf = cp["mdfusion"]
-            if "root_dir" in conf:
-                manual_defaults["root_dir"] = Path(conf["root_dir"])
-            if "output" in conf:
-                manual_defaults["output"] = conf["output"]
-            if conf.getboolean("no_toc", fallback=False):
-                manual_defaults["no_toc"] = True
-            if conf.getboolean("title_page", fallback=False):
-                manual_defaults["title_page"] = True
-            if "title" in conf:
-                manual_defaults["title"] = conf["title"]
-            if "author" in conf:
-                manual_defaults["author"] = conf["author"]
-            if "pandoc_args" in conf:
-                manual_defaults["pandoc_args"] = conf["pandoc_args"]
+        if _TOML_BINARY:
+            with cfg_path.open("rb") as f:
+                toml_data = tomllib.load(f)  # type: ignore
+        else:
+            with cfg_path.open("r", encoding="utf-8") as f:
+                toml_data = tomllib.load(f)
+        conf = toml_data.get("mdfusion", {})
+        if "root_dir" in conf:
+            manual_defaults["root_dir"] = Path(conf["root_dir"])
+        if "output" in conf:
+            manual_defaults["output"] = conf["output"]
+        if conf.get("no_toc", False):
+            manual_defaults["no_toc"] = True
+        if conf.get("title_page", False):
+            manual_defaults["title_page"] = True
+        if "title" in conf:
+            manual_defaults["title"] = conf["title"]
+        if "author" in conf:
+            manual_defaults["author"] = conf["author"]
+        if "pandoc_args" in conf:
+            manual_defaults["pandoc_args"] = conf["pandoc_args"]
 
     # 2) Arg parsing
     parser = configargparse.ArgParser(
