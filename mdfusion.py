@@ -179,7 +179,7 @@ def main():
         else ""
     )
 
-    temp_dir = Path(tempfile.mkdtemp(prefix="md2pdf_"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="mdfusion_"))
     try:
         user_header = Path(__file__).parent / "header.tex"
         if not user_header.is_file():

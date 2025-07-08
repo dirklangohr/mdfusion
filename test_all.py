@@ -1,4 +1,3 @@
-# tests/test_md2pdf.py
 import re
 from datetime import date
 

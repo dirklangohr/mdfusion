@@ -43,10 +43,8 @@ pandoc_args = --number-sections
 
         return Result()
 
+    # call with no args => pick up config
     monkeypatch.setattr(subprocess, "run", fake_run)
-
-    # 5) Call main() with no args → picks up config
-    monkeypatch.setattr(sys, "argv", ["md2pdf.py"])
     mdfusion.main()
 
     # 6) Check printed output
