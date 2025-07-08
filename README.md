@@ -49,7 +49,7 @@ mdfusion ROOT_DIR [OPTIONS]
 - `--title TITLE`          Set title for title page (default: directory name)
 - `--author AUTHOR`        Set author for title page (default: OS user)
 - `--pandoc-args ARGS`     Extra Pandoc arguments (whitespace-separated)
-- `-c, --config FILE`      Path to a `.mdfusion` INI-style config file
+- `-c, --config FILE`      Path to a `mdfusion.toml` config file (default: `mdfusion.toml` in the current directory)
 
 ### Example
 

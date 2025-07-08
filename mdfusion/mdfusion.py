@@ -15,7 +15,7 @@ import shutil
 import getpass
 from pathlib import Path
 from datetime import date
-import configargparse
+import argparse
 
 import toml as tomllib  # type: ignore
 
@@ -96,12 +96,8 @@ def main():
             cfg_path = default_cfg
     manual_defaults: dict = {}
     if cfg_path and cfg_path.is_file():
-        if _TOML_BINARY:
-            with cfg_path.open("rb") as f:
-                toml_data = tomllib.load(f)  # type: ignore
-        else:
-            with cfg_path.open("r", encoding="utf-8") as f:
-                toml_data = tomllib.load(f)
+        with cfg_path.open("r", encoding="utf-8") as f:
+            toml_data = tomllib.load(f)
         conf = toml_data.get("mdfusion", {})
         if "root_dir" in conf:
             manual_defaults["root_dir"] = Path(conf["root_dir"])
@@ -119,7 +115,7 @@ def main():
             manual_defaults["pandoc_args"] = conf["pandoc_args"]
 
     # 2) Arg parsing
-    parser = configargparse.ArgParser(
+    parser = argparse.ArgumentParser(
         description=(
             "Merge all Markdown files under a directory into one PDF, "
             "with optional title page, TOC control, image-link rewriting, small margins."
@@ -128,8 +124,7 @@ def main():
     parser.add_argument(
         "-c",
         "--config",
-        is_config_file=True,
-        help="path to a .mdfusion INI-style config file",
+        help="path to a .mdfusion TOML config file",
     )
     parser.add_argument(
         "root_dir", nargs="?", type=Path, help="root directory for Markdown files"
