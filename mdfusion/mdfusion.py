@@ -216,59 +216,81 @@ def main():
         )  # 1 step per ~5KB
         total_steps = startup_steps + file_steps + max(1, content_steps)
 
-        try:
-            with tqdm(total=total_steps, desc="Running pandoc", unit="step") as pbar:
-                # Simulate startup
-                for _ in range(startup_steps):
-                    time.sleep(0.1)
-                    pbar.update(1)
-                # Simulate per-file/content progress while pandoc runs
-                proc = subprocess.Popen(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
+        if not sys.stdout.isatty():
+            try:
+                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                print(f"Merged PDF written to {out_pdf}")
+            except subprocess.CalledProcessError as e:
+                err = e.stderr or ""
+                m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
+                    r"Unknown option (--\\S+)", err
                 )
-                steps_done = startup_steps
-                while proc.poll() is None and steps_done < total_steps:
-                    time.sleep(0.15)
-                    pbar.update(1)
-                    steps_done += 1
-                # If finished early, fill the bar
-                if steps_done < total_steps:
-                    pbar.update(total_steps - steps_done)
-                # If pandoc is still running, show spinner until done
-                spinner_cycle = ["|", "/", "-", "\\"]
-                idx = 0
-                spinner_msg = "Pandoc still running... "
-                while proc.poll() is None:
+                if m:
+                    bad = m.group(1)
                     print(
-                        f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
-                        end="",
-                        flush=True,
+                        f"Error: argument '{bad}' not recognized.\n Try: pandoc --help",
+                        file=sys.stderr,
                     )
-                    idx += 1
-                    time.sleep(0.15)
-                print(
-                    "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
-                )  # clear spinner line
-                stdout, stderr = proc.communicate()
-                if proc.returncode != 0:
-                    raise subprocess.CalledProcessError(
-                        proc.returncode, cmd, output=stdout, stderr=stderr
+                else:
+                    print(err.strip(), file=sys.stderr)
+                sys.exit(1)
+        else:
+            try:
+                with tqdm(
+                    total=total_steps, desc="Running pandoc", unit="step"
+                ) as pbar:
+                    # Simulate startup
+                    for _ in range(startup_steps):
+                        time.sleep(0.1)
+                        pbar.update(1)
+                    # Simulate per-file/content progress while pandoc runs
+                    proc = subprocess.Popen(
+                        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
                     )
-            print(f"Merged PDF written to {out_pdf}")
-        except subprocess.CalledProcessError as e:
-            err = e.stderr or ""
-            m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
-                r"Unknown option (--\\S+)", err
-            )
-            if m:
-                bad = m.group(1)
-                print(
-                    f"Error: argument '{bad}' not recognized.\n Try: pandoc --help",
-                    file=sys.stderr,
+                    steps_done = startup_steps
+                    while proc.poll() is None and steps_done < total_steps:
+                        time.sleep(0.15)
+                        pbar.update(1)
+                        steps_done += 1
+                    # If finished early, fill the bar
+                    if steps_done < total_steps:
+                        pbar.update(total_steps - steps_done)
+                    # If pandoc is still running, show spinner until done
+                    spinner_cycle = ["|", "/", "-", "\\"]
+                    idx = 0
+                    spinner_msg = "Pandoc still running... "
+                    while proc.poll() is None:
+                        print(
+                            f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
+                            end="",
+                            flush=True,
+                        )
+                        idx += 1
+                        time.sleep(0.15)
+                    print(
+                        "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
+                    )  # clear spinner line
+                    stdout, stderr = proc.communicate()
+                    if proc.returncode != 0:
+                        raise subprocess.CalledProcessError(
+                            proc.returncode, cmd, output=stdout, stderr=stderr
+                        )
+                print(f"Merged PDF written to {out_pdf}")
+            except subprocess.CalledProcessError as e:
+                err = e.stderr or ""
+                m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
+                    r"Unknown option (--\\S+)", err
                 )
-            else:
-                print(err.strip(), file=sys.stderr)
-            sys.exit(1)
+                if m:
+                    bad = m.group(1)
+                    print(
+                        f"Error: argument '{bad}' not recognized.\n Try: pandoc --help",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(err.strip(), file=sys.stderr)
+                sys.exit(1)
     finally:
         shutil.rmtree(temp_dir)
 
