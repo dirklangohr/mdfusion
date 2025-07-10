@@ -101,45 +101,30 @@ def handle_pandoc_error(e, cmd):
     sys.exit(1)
 
 
-def run_pandoc_with_progress(cmd, total_steps, startup_steps, out_pdf):
+def run_pandoc_with_spinner(cmd, out_pdf):
     try:
-        with tqdm(total=total_steps, desc="Running pandoc", unit="step") as pbar:
-            # Simulate startup
-            for _ in range(startup_steps):
-                time.sleep(0.1)
-                pbar.update(1)
-            # Simulate per-file/content progress while pandoc runs
-            proc = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-            )
-            steps_done = startup_steps
-            while proc.poll() is None and steps_done < total_steps:
-                time.sleep(0.15)
-                pbar.update(1)
-                steps_done += 1
-            # If finished early, fill the bar
-            if steps_done < total_steps:
-                pbar.update(total_steps - steps_done)
-            # If pandoc is still running, show spinner until done
-            spinner_cycle = ["|", "/", "-", "\\"]
-            idx = 0
-            spinner_msg = "Pandoc still running... "
-            while proc.poll() is None:
-                print(
-                    f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
-                    end="",
-                    flush=True,
-                )
-                idx += 1
-                time.sleep(0.15)
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+        spinner_cycle = ["|", "/", "-", "\\"]
+        idx = 0
+        spinner_msg = "Pandoc running... "
+        while proc.poll() is None:
             print(
-                "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
-            )  # clear spinner line
-            stdout, stderr = proc.communicate()
-            if proc.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    proc.returncode, cmd, output=stdout, stderr=stderr
-                )
+                f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
+                end="",
+                flush=True,
+            )
+            idx += 1
+            time.sleep(0.15)
+        print(
+            "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
+        )  # clear spinner line
+        stdout, stderr = proc.communicate()
+        if proc.returncode != 0:
+            raise subprocess.CalledProcessError(
+                proc.returncode, cmd, output=stdout, stderr=stderr
+            )
         print(f"Merged PDF written to {out_pdf}")
     except subprocess.CalledProcessError as e:
         handle_pandoc_error(e, cmd)
@@ -267,14 +252,6 @@ def main():
             cmd.append("--toc")
         cmd.extend(pandoc_args)
 
-        # Estimate progress for pandoc: startup + per-file/content length
-        startup_steps = 5  # arbitrary units for startup
-        file_steps = len(md_files)
-        content_steps = (
-            sum(md.stat().st_size for md in md_files) // 5000
-        )  # 1 step per ~5KB
-        total_steps = startup_steps + file_steps + max(1, content_steps)
-
         # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
         if not sys.stdout.isatty():
             try:
@@ -283,7 +260,7 @@ def main():
             except subprocess.CalledProcessError as e:
                 handle_pandoc_error(e, cmd)
         else:
-            run_pandoc_with_progress(cmd, total_steps, startup_steps, out_pdf)
+            run_pandoc_with_spinner(cmd, out_pdf)
     finally:
         shutil.rmtree(temp_dir)
 
