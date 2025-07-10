@@ -211,7 +211,9 @@ def main():
         # Estimate progress for pandoc: startup + per-file/content length
         startup_steps = 5  # arbitrary units for startup
         file_steps = len(md_files)
-        content_steps = sum(md.stat().st_size for md in md_files) // 5000  # 1 step per ~5KB
+        content_steps = (
+            sum(md.stat().st_size for md in md_files) // 5000
+        )  # 1 step per ~5KB
         total_steps = startup_steps + file_steps + max(1, content_steps)
 
         try:
@@ -221,7 +223,9 @@ def main():
                     time.sleep(0.1)
                     pbar.update(1)
                 # Simulate per-file/content progress while pandoc runs
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                proc = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
                 steps_done = startup_steps
                 while proc.poll() is None and steps_done < total_steps:
                     time.sleep(0.15)
@@ -231,17 +235,25 @@ def main():
                 if steps_done < total_steps:
                     pbar.update(total_steps - steps_done)
                 # If pandoc is still running, show spinner until done
-                spinner_cycle = ['|', '/', '-', '\\']
+                spinner_cycle = ["|", "/", "-", "\\"]
                 idx = 0
                 spinner_msg = "Pandoc still running... "
                 while proc.poll() is None:
-                    print(f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}", end="", flush=True)
+                    print(
+                        f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
+                        end="",
+                        flush=True,
+                    )
                     idx += 1
                     time.sleep(0.15)
-                print("\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True)  # clear spinner line
+                print(
+                    "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
+                )  # clear spinner line
                 stdout, stderr = proc.communicate()
                 if proc.returncode != 0:
-                    raise subprocess.CalledProcessError(proc.returncode, cmd, output=stdout, stderr=stderr)
+                    raise subprocess.CalledProcessError(
+                        proc.returncode, cmd, output=stdout, stderr=stderr
+                    )
             print(f"Merged PDF written to {out_pdf}")
         except subprocess.CalledProcessError as e:
             err = e.stderr or ""
