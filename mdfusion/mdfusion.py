@@ -85,6 +85,66 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
             out.write("\n\n")
 
 
+def handle_pandoc_error(e, cmd):
+    err = e.stderr or ""
+    m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
+        r"Unknown option (--\\S+)", err
+    )
+    if m:
+        bad = m.group(1)
+        print(
+            f"Error: argument '{bad}' not recognized.\n Try: pandoc --help",
+            file=sys.stderr,
+        )
+    else:
+        print(err.strip(), file=sys.stderr)
+    sys.exit(1)
+
+
+def run_pandoc_with_progress(cmd, total_steps, startup_steps, out_pdf):
+    try:
+        with tqdm(total=total_steps, desc="Running pandoc", unit="step") as pbar:
+            # Simulate startup
+            for _ in range(startup_steps):
+                time.sleep(0.1)
+                pbar.update(1)
+            # Simulate per-file/content progress while pandoc runs
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
+            steps_done = startup_steps
+            while proc.poll() is None and steps_done < total_steps:
+                time.sleep(0.15)
+                pbar.update(1)
+                steps_done += 1
+            # If finished early, fill the bar
+            if steps_done < total_steps:
+                pbar.update(total_steps - steps_done)
+            # If pandoc is still running, show spinner until done
+            spinner_cycle = ["|", "/", "-", "\\"]
+            idx = 0
+            spinner_msg = "Pandoc still running... "
+            while proc.poll() is None:
+                print(
+                    f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
+                    end="",
+                    flush=True,
+                )
+                idx += 1
+                time.sleep(0.15)
+            print(
+                "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
+            )  # clear spinner line
+            stdout, stderr = proc.communicate()
+            if proc.returncode != 0:
+                raise subprocess.CalledProcessError(
+                    proc.returncode, cmd, output=stdout, stderr=stderr
+                )
+        print(f"Merged PDF written to {out_pdf}")
+    except subprocess.CalledProcessError as e:
+        handle_pandoc_error(e, cmd)
+
+
 def main():
     # 1) Manual read of .mdfusion [mdfusion] section
     cfg_path = None
@@ -168,7 +228,6 @@ def main():
     if not args.root_dir:
         parser.error("you must specify root_dir (or provide it in the config file)")
 
-    # rest of script unchanged…
     md_files = find_markdown_files(args.root_dir)
     if not md_files:
         print(f"No Markdown files found in {args.root_dir}", file=sys.stderr)
@@ -222,75 +281,9 @@ def main():
                 subprocess.run(cmd, check=True, capture_output=True, text=True)
                 print(f"Merged PDF written to {out_pdf}")
             except subprocess.CalledProcessError as e:
-                err = e.stderr or ""
-                m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
-                    r"Unknown option (--\\S+)", err
-                )
-                if m:
-                    bad = m.group(1)
-                    print(
-                        f"Error: argument '{bad}' not recognized.\n Try: pandoc --help",
-                        file=sys.stderr,
-                    )
-                else:
-                    print(err.strip(), file=sys.stderr)
-                sys.exit(1)
+                handle_pandoc_error(e, cmd)
         else:
-            try:
-                with tqdm(
-                    total=total_steps, desc="Running pandoc", unit="step"
-                ) as pbar:
-                    # Simulate startup
-                    for _ in range(startup_steps):
-                        time.sleep(0.1)
-                        pbar.update(1)
-                    # Simulate per-file/content progress while pandoc runs
-                    proc = subprocess.Popen(
-                        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-                    )
-                    steps_done = startup_steps
-                    while proc.poll() is None and steps_done < total_steps:
-                        time.sleep(0.15)
-                        pbar.update(1)
-                        steps_done += 1
-                    # If finished early, fill the bar
-                    if steps_done < total_steps:
-                        pbar.update(total_steps - steps_done)
-                    # If pandoc is still running, show spinner until done
-                    spinner_cycle = ["|", "/", "-", "\\"]
-                    idx = 0
-                    spinner_msg = "Pandoc still running... "
-                    while proc.poll() is None:
-                        print(
-                            f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}",
-                            end="",
-                            flush=True,
-                        )
-                        idx += 1
-                        time.sleep(0.15)
-                    print(
-                        "\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True
-                    )  # clear spinner line
-                    stdout, stderr = proc.communicate()
-                    if proc.returncode != 0:
-                        raise subprocess.CalledProcessError(
-                            proc.returncode, cmd, output=stdout, stderr=stderr
-                        )
-                print(f"Merged PDF written to {out_pdf}")
-            except subprocess.CalledProcessError as e:
-                err = e.stderr or ""
-                m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
-                    r"Unknown option (--\\S+)", err
-                )
-                if m:
-                    bad = m.group(1)
-                    print(
-                        f"Error: argument '{bad}' not recognized.\n Try: pandoc --help",
-                        file=sys.stderr,
-                    )
-                else:
-                    print(err.strip(), file=sys.stderr)
-                sys.exit(1)
+            run_pandoc_with_progress(cmd, total_steps, startup_steps, out_pdf)
     finally:
         shutil.rmtree(temp_dir)
 
