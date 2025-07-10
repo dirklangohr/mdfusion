@@ -49,12 +49,6 @@ def build_header(header_tex: Path | None = None) -> Path:
         "\n"
         r"\sectionfont{\centering\fontsize{16}{18}\selectfont}"
         "\n"
-        r"\usepackage{graphicx}"
-        "\n"
-        r"\let\Oldincludegraphics\includegraphics"
-        "\n"
-        r"\renewcommand{\includegraphics}[2][]{\Oldincludegraphics[width=\\textwidth,#1]{#2}}"
-        "\n"
     )
     tmp = tempfile.NamedTemporaryFile(
         "w", suffix=".tex", delete=False, encoding="utf-8"
