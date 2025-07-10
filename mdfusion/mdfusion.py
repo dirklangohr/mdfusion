@@ -17,7 +17,6 @@ from pathlib import Path
 from datetime import date
 import argparse
 from tqdm import tqdm  # progress bar
-import threading
 import time
 
 import toml as tomllib  # type: ignore
@@ -84,17 +83,6 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
 
             out.write(IMAGE_RE.sub(fix_link, text))
             out.write("\n\n")
-
-
-def spinner(msg, stop_event):
-    spinner_cycle = ["|", "/", "-", "\\"]
-    idx = 0
-    print(msg, end="", flush=True)
-    while not stop_event.is_set():
-        print(f"\r{msg} {spinner_cycle[idx % len(spinner_cycle)]}", end="", flush=True)
-        idx += 1
-        time.sleep(0.1)
-    print(f"\r{msg} done.      ")
 
 
 def main():
@@ -220,23 +208,42 @@ def main():
             cmd.append("--toc")
         cmd.extend(pandoc_args)
 
-        stop_event = None
-        spin_thread = None
+        # Estimate progress for pandoc: startup + per-file/content length
+        startup_steps = 5  # arbitrary units for startup
+        file_steps = len(md_files)
+        content_steps = sum(md.stat().st_size for md in md_files) // 5000  # 1 step per ~5KB
+        total_steps = startup_steps + file_steps + max(1, content_steps)
+
         try:
-            stop_event = threading.Event()
-            spin_thread = threading.Thread(
-                target=spinner, args=("Running pandoc...", stop_event)
-            )
-            spin_thread.start()
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
-            stop_event.set()
-            spin_thread.join()
+            with tqdm(total=total_steps, desc="Running pandoc", unit="step") as pbar:
+                # Simulate startup
+                for _ in range(startup_steps):
+                    time.sleep(0.1)
+                    pbar.update(1)
+                # Simulate per-file/content progress while pandoc runs
+                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                steps_done = startup_steps
+                while proc.poll() is None and steps_done < total_steps:
+                    time.sleep(0.15)
+                    pbar.update(1)
+                    steps_done += 1
+                # If finished early, fill the bar
+                if steps_done < total_steps:
+                    pbar.update(total_steps - steps_done)
+                # If pandoc is still running, show spinner until done
+                spinner_cycle = ['|', '/', '-', '\\']
+                idx = 0
+                spinner_msg = "Pandoc still running... "
+                while proc.poll() is None:
+                    print(f"\r{spinner_msg}{spinner_cycle[idx % len(spinner_cycle)]}", end="", flush=True)
+                    idx += 1
+                    time.sleep(0.15)
+                print("\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True)  # clear spinner line
+                stdout, stderr = proc.communicate()
+                if proc.returncode != 0:
+                    raise subprocess.CalledProcessError(proc.returncode, cmd, output=stdout, stderr=stderr)
             print(f"Merged PDF written to {out_pdf}")
         except subprocess.CalledProcessError as e:
-            if stop_event is not None:
-                stop_event.set()
-            if spin_thread is not None:
-                spin_thread.join()
             err = e.stderr or ""
             m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
                 r"Unknown option (--\\S+)", err
