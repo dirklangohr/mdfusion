@@ -16,6 +16,9 @@ import getpass
 from pathlib import Path
 from datetime import date
 import argparse
+from tqdm import tqdm  # progress bar
+import threading
+import time
 
 import toml as tomllib  # type: ignore
 
@@ -71,7 +74,7 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
     with merged_md.open("w", encoding="utf-8") as out:
         if metadata:
             out.write(metadata)
-        for md in md_files:
+        for md in tqdm(md_files, desc="Merging Markdown files", unit="file"):
             out.write(r"\newpage" + "\n")
             text = md.read_text(encoding="utf-8")
 
@@ -81,6 +84,17 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
 
             out.write(IMAGE_RE.sub(fix_link, text))
             out.write("\n\n")
+
+
+def spinner(msg, stop_event):
+    spinner_cycle = ["|", "/", "-", "\\"]
+    idx = 0
+    print(msg, end="", flush=True)
+    while not stop_event.is_set():
+        print(f"\r{msg} {spinner_cycle[idx % len(spinner_cycle)]}", end="", flush=True)
+        idx += 1
+        time.sleep(0.1)
+    print(f"\r{msg} done.      ")
 
 
 def main():
@@ -206,13 +220,26 @@ def main():
             cmd.append("--toc")
         cmd.extend(pandoc_args)
 
+        stop_event = None
+        spin_thread = None
         try:
+            stop_event = threading.Event()
+            spin_thread = threading.Thread(
+                target=spinner, args=("Running pandoc...", stop_event)
+            )
+            spin_thread.start()
             subprocess.run(cmd, check=True, capture_output=True, text=True)
+            stop_event.set()
+            spin_thread.join()
             print(f"Merged PDF written to {out_pdf}")
         except subprocess.CalledProcessError as e:
+            if stop_event is not None:
+                stop_event.set()
+            if spin_thread is not None:
+                spin_thread.join()
             err = e.stderr or ""
             m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
-                r"Unknown option (--\S+)", err
+                r"Unknown option (--\\S+)", err
             )
             if m:
                 bad = m.group(1)
