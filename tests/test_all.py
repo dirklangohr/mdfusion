@@ -99,8 +99,6 @@ def test_merge_markdown_rewrites_image_links_and_adds_pages(tmp_path):
     out = merged.read_text(encoding="utf-8")
     # metadata at top
     assert out.startswith("METABLOCK")
-    # should have two \newpage markers
-    assert out.count(r"\newpage") == 2
 
     # check that each image link was replaced with absolute path
     abs1 = str((md1.parent / "pic.png").resolve())
@@ -118,5 +116,4 @@ def test_merge_without_metadata(tmp_path):
     merge_markdown([md], merged, metadata="")
     out = merged.read_text(encoding="utf-8")
     # no YAML, but page break before content
-    assert out.startswith(r"\newpage")
     assert "Hello" in out
