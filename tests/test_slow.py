@@ -31,12 +31,8 @@ def test_merge_many_long_markdown_files(tmp_path):
     params = mdfusion.RunParams(
         root_dir=md_dir,
         output=str(out_pdf),
-        no_toc=False,
-        title_page=False,
         title="Test PDF",
         author="UnitTest",
-        pandoc_args=[],
-        config_path=None,
     )
     mdfusion.run(params)
 
