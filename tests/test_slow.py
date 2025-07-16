@@ -16,7 +16,7 @@ def make_long_md_file(path, n_sections=50, section_len=100):
             )
 
 
-def test_merge_many_long_markdown_files(tmp_path, monkeypatch):
+def test_merge_many_long_markdown_files(tmp_path):
     # Create a temp directory with many long markdown files
     md_dir = tmp_path / "mds"
     md_dir.mkdir()
@@ -27,23 +27,22 @@ def test_merge_many_long_markdown_files(tmp_path, monkeypatch):
     # Output PDF path
     out_pdf = tmp_path / "output.pdf"
 
-    # Patch sys.argv to simulate CLI call
-    monkeypatch.setattr(
-        "sys.argv",
-        [
-            "mdfusion",
-            str(md_dir),
-            "-o",
-            str(out_pdf),
-            "--title",
-            "Test PDF",
-            "--author",
-            "UnitTest",
-        ],
+    # Use RunParams and run() directly
+    params = mdfusion.RunParams(
+        root_dir=md_dir,
+        output=str(out_pdf),
+        no_toc=False,
+        title_page=False,
+        title="Test PDF",
+        author="UnitTest",
+        pandoc_args=[],
+        config_path=None,
     )
+    mdfusion.run(params)
 
-    # Run main directly, do not capture output so tqdm bar is visible
-    mdfusion.main()
+    assert (
+        out_pdf.exists() and out_pdf.stat().st_size > 0
+    ), "Output PDF not created or empty"
 
     assert (
         out_pdf.exists() and out_pdf.stat().st_size > 0
