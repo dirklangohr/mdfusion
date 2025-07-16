@@ -141,6 +141,7 @@ class RunParams:
     author: str | None = None
     pandoc_args: list[str] = field(default_factory=list)
     config_path: Path | None = None
+    header_tex: Path | None = None
 
 
 def run(params: "RunParams"):
@@ -159,7 +160,10 @@ def run(params: "RunParams"):
 
     temp_dir = Path(tempfile.mkdtemp(prefix="mdfusion_"))
     try:
-        user_header = Path.cwd() / "header.tex"
+        # Use params.header_tex if provided, else default to cwd/header.tex
+        user_header = params.header_tex
+        if user_header is None:
+            user_header = Path.cwd() / "header.tex"
         if not user_header.is_file():
             user_header = None
         hdr = build_header(user_header)
@@ -217,6 +221,10 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
             manual_defaults["author"] = conf["author"]
         if "pandoc_args" in conf:
             manual_defaults["pandoc_args"] = conf["pandoc_args"]
+        if "header_tex" in conf:
+            manual_defaults["header_tex"] = Path(
+                conf["header_tex"]
+            )  # <-- add this line
     return manual_defaults
 
 
@@ -272,6 +280,13 @@ def main():
         default=None,
         help="extra pandoc arguments, whitespace-separated",
     )
+    parser.add_argument(
+        "--header-tex",
+        dest="header_tex",
+        default=None,
+        type=Path,
+        help="path to a user-defined header.tex file (default: ./header.tex)",
+    )
 
     # apply manual defaults before parse
     parser.set_defaults(**manual_defaults)
@@ -296,6 +311,7 @@ def main():
         author=args.author,
         pandoc_args=pandoc_args,
         config_path=cfg_path,
+        header_tex=args.header_tex,  # <-- add this line
     )
     run(params)
 
