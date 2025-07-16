@@ -16,6 +16,13 @@ def test_presentation():
         title="Snails: The Ultimate Guide",
         author="From a loving snail fan",
         presentation=True,
-        pandoc_args=["-c", css_path, "--slide-level", "6"],
-    )
+        pandoc_args=["--slide-level", "6",
+                    "--number-sections",
+                    "-V", "autoSlide=5000",
+                    "-V", 'slideNumber="c/t"',
+                    "-V", 'transition=convex',
+                    "-V", "theme=moon",
+                    "-V", "showSlideNumber=all",
+                    "-c", css_path
+        ])
     mdfusion.run(params)
