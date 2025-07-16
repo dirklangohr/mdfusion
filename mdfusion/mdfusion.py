@@ -142,9 +142,21 @@ class RunParams:
     config_path: Path | None = None  # path to a mdfusion.toml TOML config file
     header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
     debug: bool = False  # if True, print all Pandoc output and use verbose mode
+    presentation: bool = False  # if True, use reveal.js presentation mode
     # Add help strings for simple-parsing
     def __post_init__(self):
-        pass  # No-op, but can be used for post-processing if needed
+        if self.presentation:
+            if self.output and not self.output.lower().endswith(".html"):
+                raise ValueError("Output file for presentations must be HTML, got: " + self.output)
+            
+            self.pandoc_args.extend(
+                [
+                    "-t",
+                    "revealjs",
+                    "-V",
+                    "revealjs-url=https://cdn.jsdelivr.net/npm/reveal.js@4",
+                ]
+            )
 
 
 def run(params: "RunParams"):
@@ -182,7 +194,8 @@ def run(params: "RunParams"):
         resource_dirs = {str(p.parent) for p in md_files}
         resource_path = ":".join(sorted(resource_dirs))
 
-        out_pdf = params.output or f"{params.root_dir.name}.pdf"
+        default_output = f"{params.root_dir.name}.pdf" if not params.presentation else f"{params.root_dir.name}.html"
+        out_pdf = params.output or default_output
         cmd = [
             "pandoc",
             "-s",

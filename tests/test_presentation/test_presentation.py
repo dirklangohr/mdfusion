@@ -15,6 +15,7 @@ def test_presentation():
         title_page=False,
         title="Snails: The Ultimate Guide",
         author="From a loving snail fan",
-        pandoc_args=["-t", "revealjs", "-V", "revealjs-url=https://cdn.jsdelivr.net/npm/reveal.js@4", "-c", css_path, "--slide-level", "6"],
+        presentation=True,
+        pandoc_args=["-c", css_path, "--slide-level", "6"],
     )
     mdfusion.run(params)
