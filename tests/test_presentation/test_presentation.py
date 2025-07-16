@@ -13,10 +13,8 @@ def test_presentation():
         output=output_pdf,
         no_toc=False,
         title_page=False,
-        title=None,
-        author=None,
+        title="Snails: The Ultimate Guide",
+        author="From a loving snail fan",
         pandoc_args=["-t", "revealjs", "-V", "revealjs-url=https://cdn.jsdelivr.net/npm/reveal.js@4", "-c", css_path, "--slide-level", "6"],
-        config_path=None,
-        header_tex=None
     )
     mdfusion.run(params)
