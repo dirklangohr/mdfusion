@@ -20,6 +20,7 @@ from tqdm import tqdm  # progress bar
 import time
 
 import toml as tomllib  # type: ignore
+from dataclasses import dataclass, field
 
 _TOML_BINARY = False
 
@@ -130,6 +131,71 @@ def run_pandoc_with_spinner(cmd, out_pdf):
         handle_pandoc_error(e, cmd)
 
 
+@dataclass
+class RunParams:
+    root_dir: Path
+    output: str | None = None
+    no_toc: bool = False
+    title_page: bool = False
+    title: str | None = None
+    author: str | None = None
+    pandoc_args: list[str] = field(default_factory=list)
+    config_path: Path | None = None
+
+
+def run(params: "RunParams"):
+    md_files = find_markdown_files(params.root_dir)
+    if not md_files:
+        print(f"No Markdown files found in {params.root_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    title = params.title or params.root_dir.name
+    author = params.author or getpass.getuser()
+    metadata = (
+        create_metadata(title, author)
+        if (params.title_page or params.title or params.author)
+        else ""
+    )
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="mdfusion_"))
+    try:
+        user_header = Path.cwd() / "header.tex"
+        if not user_header.is_file():
+            user_header = None
+        hdr = build_header(user_header)
+        merged = temp_dir / "merged.md"
+        merge_markdown(md_files, merged, metadata)
+
+        resource_dirs = {str(p.parent) for p in md_files}
+        resource_path = ":".join(sorted(resource_dirs))
+
+        out_pdf = params.output or f"{params.root_dir.name}.pdf"
+        cmd = [
+            "pandoc",
+            str(merged),
+            "-o",
+            out_pdf,
+            "--pdf-engine=xelatex",
+            f"--include-in-header={hdr}",
+            f"--resource-path={resource_path}",
+        ]
+        if not params.no_toc:
+            cmd.append("--toc")
+        cmd.extend(params.pandoc_args)
+
+        # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
+        if not sys.stdout.isatty():
+            try:
+                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                print(f"Merged PDF written to {out_pdf}")
+            except subprocess.CalledProcessError as e:
+                handle_pandoc_error(e, cmd)
+        else:
+            run_pandoc_with_spinner(cmd, out_pdf)
+    finally:
+        shutil.rmtree(temp_dir)
+
+
 def main():
     # 1) Manual read of .mdfusion [mdfusion] section
     cfg_path = None
@@ -213,56 +279,17 @@ def main():
     if not args.root_dir:
         parser.error("you must specify root_dir (or provide it in the config file)")
 
-    md_files = find_markdown_files(args.root_dir)
-    if not md_files:
-        print(f"No Markdown files found in {args.root_dir}", file=sys.stderr)
-        sys.exit(1)
-
-    title = args.title or args.root_dir.name
-    author = args.author or getpass.getuser()
-    metadata = (
-        create_metadata(title, author)
-        if (args.title_page or args.title or args.author)
-        else ""
+    params = RunParams(
+        root_dir=args.root_dir,
+        output=args.output,
+        no_toc=args.no_toc,
+        title_page=args.title_page,
+        title=args.title,
+        author=args.author,
+        pandoc_args=pandoc_args,
+        config_path=cfg_path,
     )
-
-    temp_dir = Path(tempfile.mkdtemp(prefix="mdfusion_"))
-    try:
-        user_header = Path.cwd() / "header.tex"
-        if not user_header.is_file():
-            user_header = None
-        hdr = build_header(user_header)
-        merged = temp_dir / "merged.md"
-        merge_markdown(md_files, merged, metadata)
-
-        resource_dirs = {str(p.parent) for p in md_files}
-        resource_path = ":".join(sorted(resource_dirs))
-
-        out_pdf = args.output or f"{args.root_dir.name}.pdf"
-        cmd = [
-            "pandoc",
-            str(merged),
-            "-o",
-            out_pdf,
-            "--pdf-engine=xelatex",
-            f"--include-in-header={hdr}",
-            f"--resource-path={resource_path}",
-        ]
-        if not args.no_toc:
-            cmd.append("--toc")
-        cmd.extend(pandoc_args)
-
-        # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
-        if not sys.stdout.isatty():
-            try:
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
-                print(f"Merged PDF written to {out_pdf}")
-            except subprocess.CalledProcessError as e:
-                handle_pandoc_error(e, cmd)
-        else:
-            run_pandoc_with_spinner(cmd, out_pdf)
-    finally:
-        shutil.rmtree(temp_dir)
+    run(params)
 
 
 if __name__ == "__main__":
