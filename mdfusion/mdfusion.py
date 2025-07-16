@@ -142,6 +142,7 @@ class RunParams:
     pandoc_args: list[str] = field(default_factory=list)  # extra pandoc arguments, whitespace-separated
     config_path: Path | None = None  # path to a mdfusion.toml TOML config file
     header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
+    debug: bool = False  # if True, print all Pandoc output and use verbose mode
     # Add help strings for simple-parsing
     def __post_init__(self):
         pass  # No-op, but can be used for post-processing if needed
@@ -150,7 +151,7 @@ class RunParams:
 def run(params: "RunParams"):
     if not requirements_met():
         return
-    
+
     if not params.root_dir:
         print("Error: root_dir must be specified", file=sys.stderr)
         return
@@ -194,17 +195,32 @@ def run(params: "RunParams"):
         ]
         if not params.no_toc:
             cmd.append("--toc")
+        if params.debug:
+            cmd.append("-v")
         cmd.extend(params.pandoc_args)
 
-        # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
-        if not sys.stdout.isatty():
+        if params.debug:
+            # Always print all output from Pandoc
+            print(f"[DEBUG] Running: {' '.join(cmd)}")
             try:
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
+                result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+                print(result.stdout)
+                print(result.stderr, file=sys.stderr)
                 print(f"Merged PDF written to {out_pdf}")
             except subprocess.CalledProcessError as e:
+                print(e.stdout)
+                print(e.stderr, file=sys.stderr)
                 handle_pandoc_error(e, cmd)
         else:
-            run_pandoc_with_spinner(cmd, out_pdf)
+            # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
+            if not sys.stdout.isatty():
+                try:
+                    subprocess.run(cmd, check=True, capture_output=True, text=True)
+                    print(f"Merged PDF written to {out_pdf}")
+                except subprocess.CalledProcessError as e:
+                    handle_pandoc_error(e, cmd)
+            else:
+                run_pandoc_with_spinner(cmd, out_pdf)
     finally:
         shutil.rmtree(temp_dir)
 
