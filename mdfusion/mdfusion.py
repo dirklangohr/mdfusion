@@ -133,16 +133,15 @@ def run_pandoc_with_spinner(cmd, out_pdf):
 
 @dataclass
 class RunParams:
-    root_dir: Path | None = None  # Make optional for config merging
-    output: str | None = None
-    no_toc: bool = False
-    title_page: bool = False
-    title: str | None = None
-    author: str | None = None
-    pandoc_args: list[str] = field(default_factory=list)
-    config_path: Path | None = None
-    header_tex: Path | None = None
-
+    root_dir: Path | None = None  # root directory for Markdown files
+    output: str | None = None  # output PDF filename (defaults to <root_dir>.pdf)
+    no_toc: bool = False  # omit table of contents
+    title_page: bool = False  # include a title page
+    title: str | None = None  # title for title page (defaults to dirname)
+    author: str | None = None  # author for title page (defaults to OS user)
+    pandoc_args: list[str] = field(default_factory=list)  # extra pandoc arguments, whitespace-separated
+    config_path: Path | None = None  # path to a mdfusion.toml TOML config file
+    header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
     # Add help strings for simple-parsing
     def __post_init__(self):
         pass  # No-op, but can be used for post-processing if needed
@@ -268,14 +267,10 @@ def main():
         if getattr(params, k, None) in (None, False, [], ""):
             setattr(params, k, v)
 
-    # Ensure pandoc_args is always a list
-    if isinstance(params.pandoc_args, str):
-        params.pandoc_args = params.pandoc_args.split()
-    elif params.pandoc_args is None:
-        params.pandoc_args = []
-
     # Handle extra pandoc args
     if extra:
+        if not params.pandoc_args:
+            params.pandoc_args = []
         params.pandoc_args.extend(extra)
 
     # require root_dir after merging config and CLI
