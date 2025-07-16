@@ -227,6 +227,20 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
     return manual_defaults
 
 
+def requirements_met() -> bool:
+    """Check if requirements are met."""
+    # shutil.which is a builtin cross-platform which utility
+    pandoc = shutil.which("pandoc")
+    xetex = shutil.which("xetex")
+
+    if not pandoc:
+        print("ERR: pandoc not found", file=sys.stderr)
+    if not xetex:
+        print("ERR: xetex not found", file=sys.stderr)
+
+    return bool(pandoc and xetex)
+
+
 def main():
     # 1) Find config file path
     cfg_path = None
@@ -272,7 +286,10 @@ def main():
     if not params.root_dir:
         parser.error("you must specify root_dir (or provide it in the config file)")
 
-    run(params)
+    if requirements_met():
+        run(params)
+    else:
+        sys.exit(-1)
 
 
 if __name__ == "__main__":
