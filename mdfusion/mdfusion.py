@@ -186,16 +186,18 @@ def run(params: "RunParams"):
         out_pdf = params.output or f"{params.root_dir.name}.pdf"
         cmd = [
             "pandoc",
+            "-s",
             str(merged),
             "-o",
             out_pdf,
             "--pdf-engine=xelatex",
-            f"--include-in-header={hdr}",
             f"--resource-path={resource_path}",
         ]
+        if out_pdf.endswith(".pdf"):
+            cmd.append(f"--include-in-header={hdr}")
         if not params.no_toc:
             cmd.append("--toc")
-        if params.debug:
+        if params.debug and out_pdf.endswith(".pdf"): # todo does -v really only apply to PDF?
             cmd.append("-v")
         cmd.extend(params.pandoc_args)
 
