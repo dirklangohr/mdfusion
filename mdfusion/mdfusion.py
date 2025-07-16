@@ -148,6 +148,9 @@ class RunParams:
 
 
 def run(params: "RunParams"):
+    if not requirements_met():
+        return
+    
     if not params.root_dir:
         print("Error: root_dir must be specified", file=sys.stderr)
         return
@@ -286,10 +289,7 @@ def main():
     if not params.root_dir:
         parser.error("you must specify root_dir (or provide it in the config file)")
 
-    if requirements_met():
-        run(params)
-    else:
-        sys.exit(-1)
+    run(params)
 
 
 if __name__ == "__main__":
