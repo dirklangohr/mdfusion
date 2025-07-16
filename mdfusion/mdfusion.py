@@ -148,6 +148,9 @@ class RunParams:
 
 
 def run(params: "RunParams"):
+    if not requirements_met():
+        return
+    
     if not params.root_dir:
         print("Error: root_dir must be specified", file=sys.stderr)
         return
@@ -225,6 +228,20 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
                 else:
                     manual_defaults[k] = v
     return manual_defaults
+
+
+def requirements_met() -> bool:
+    """Check if requirements are met."""
+    # shutil.which is a builtin cross-platform which utility
+    pandoc = shutil.which("pandoc")
+    xetex = shutil.which("xetex")
+
+    if not pandoc:
+        print("ERR: pandoc not found", file=sys.stderr)
+    if not xetex:
+        print("ERR: xetex not found", file=sys.stderr)
+
+    return bool(pandoc and xetex)
 
 
 def main():
