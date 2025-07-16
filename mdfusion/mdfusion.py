@@ -75,7 +75,6 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
         if metadata:
             out.write(metadata)
         for md in tqdm(md_files, desc="Merging Markdown files", unit="file"):
-            out.write(r"\newpage" + "\n")
             text = md.read_text(encoding="utf-8")
 
             def fix_link(m):
