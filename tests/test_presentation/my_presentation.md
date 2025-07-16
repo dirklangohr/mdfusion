@@ -1,10 +1,10 @@
 # Snails: A Fascinating Journey
 
-## Slide 1: Introduction to Snails
+## Introduction to Snails
 
 Snails are gastropod mollusks, known for their coiled shells and slow movement. They play an essential role in ecosystems.
 
-## Slide 2: Anatomy of a Snail
+## Anatomy of a Snail
 
 ### Key Features
 
@@ -24,7 +24,7 @@ Where:
 - $\theta$: Angle
 - $a, b$: Constants
 
-## Slide 3: Snail Habitats
+## Snail Habitats
 
 Snails are found in diverse environments:
 
@@ -36,7 +36,7 @@ Snails are found in diverse environments:
 Some snails can hibernate for years during unfavorable conditions!
 </details>
 
-## Slide 4: Snail Reproduction
+## Snail Reproduction
 
 Snails are hermaphrodites, meaning they have both male and female reproductive organs.
 
@@ -52,7 +52,7 @@ Where:
 - $P_0$: Initial population
 - $r$: Growth rate
 
-## Slide 5: Snails in Culture
+## Snails in Culture
 
 Snails have been symbols of:
 
@@ -63,12 +63,12 @@ Snails have been symbols of:
 "Slow and steady wins the race." – Aesop's Fables
 </blockquote>
 
-## Slide 6: Conclusion
+## Conclusion
 
 Snails are more than just slow-moving creatures; they are vital to ecosystems, fascinating in their biology, and rich in cultural symbolism.
 
-## Custom HTML Example
+----
 
-<div style="text-align: center; font-size: 1.5em; margin-top: 20px;">
+<p align="center" style="margin-top: 20px; font-family: Comic Sans MS, cursive; color: turquoise;">
     🐌 Thank you for learning about snails! 🐌
-</div>
+</p>
