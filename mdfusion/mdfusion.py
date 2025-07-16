@@ -15,12 +15,12 @@ import shutil
 import getpass
 from pathlib import Path
 from datetime import date
-import argparse
 from tqdm import tqdm  # progress bar
 import time
 
 import toml as tomllib  # type: ignore
 from dataclasses import dataclass, field
+from simple_parsing import ArgumentParser
 
 _TOML_BINARY = False
 
@@ -133,7 +133,7 @@ def run_pandoc_with_spinner(cmd, out_pdf):
 
 @dataclass
 class RunParams:
-    root_dir: Path
+    root_dir: Path | None = None  # Make optional for config merging
     output: str | None = None
     no_toc: bool = False
     title_page: bool = False
@@ -143,8 +143,15 @@ class RunParams:
     config_path: Path | None = None
     header_tex: Path | None = None
 
+    # Add help strings for simple-parsing
+    def __post_init__(self):
+        pass  # No-op, but can be used for post-processing if needed
+
 
 def run(params: "RunParams"):
+    if not params.root_dir:
+        print("Error: root_dir must be specified", file=sys.stderr)
+        return
     md_files = find_markdown_files(params.root_dir)
     if not md_files:
         print(f"No Markdown files found in {params.root_dir}", file=sys.stderr)
@@ -243,76 +250,38 @@ def main():
     # 2) Load config defaults
     manual_defaults = load_config_defaults(cfg_path)
 
-    # 3) Arg parsing
-    parser = argparse.ArgumentParser(
+    # 3) Arg parsing using simple-parsing
+    parser = ArgumentParser(
         description=(
             "Merge all Markdown files under a directory into one PDF, "
             "with optional title page, TOC control, image-link rewriting, small margins."
         )
     )
-    parser.add_argument(
-        "-c",
-        "--config",
-        help="path to a .mdfusion TOML config file",
-    )
-    parser.add_argument(
-        "root_dir", nargs="?", type=Path, help="root directory for Markdown files"
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        default=None,
-        help="output PDF filename (defaults to <root_dir>.pdf)",
-    )
-    parser.add_argument("--no-toc", action="store_true", help="omit table of contents")
-    parser.add_argument(
-        "--title-page", action="store_true", help="include a title page"
-    )
-    parser.add_argument(
-        "--title", default=None, help="title for title page (defaults to dirname)"
-    )
-    parser.add_argument(
-        "--author", default=None, help="author for title page (defaults to OS user)"
-    )
-    parser.add_argument(
-        "--pandoc-args",
-        dest="pandoc_args",
-        default=None,
-        help="extra pandoc arguments, whitespace-separated",
-    )
-    parser.add_argument(
-        "--header-tex",
-        dest="header_tex",
-        default=None,
-        type=Path,
-        help="path to a user-defined header.tex file (default: ./header.tex)",
-    )
+    parser.add_arguments(RunParams, dest="params")
 
-    # apply manual defaults before parse
-    parser.set_defaults(**manual_defaults)
+    # Parse known args, allow extra pandoc args
     args, extra = parser.parse_known_args()
 
-    # build pandoc_args list
-    pandoc_args: list[str] = []
-    if args.pandoc_args:
-        pandoc_args.extend(args.pandoc_args.split())
-    pandoc_args.extend(extra)
+    # Merge config defaults with CLI args
+    params: RunParams = args.params
+    for k, v in manual_defaults.items():
+        if getattr(params, k, None) in (None, False, [], ""):
+            setattr(params, k, v)
 
-    # require root_dir
-    if not args.root_dir:
+    # Ensure pandoc_args is always a list
+    if isinstance(params.pandoc_args, str):
+        params.pandoc_args = params.pandoc_args.split()
+    elif params.pandoc_args is None:
+        params.pandoc_args = []
+
+    # Handle extra pandoc args
+    if extra:
+        params.pandoc_args.extend(extra)
+
+    # require root_dir after merging config and CLI
+    if not params.root_dir:
         parser.error("you must specify root_dir (or provide it in the config file)")
 
-    params = RunParams(
-        root_dir=args.root_dir,
-        output=args.output,
-        no_toc=args.no_toc,
-        title_page=args.title_page,
-        title=args.title,
-        author=args.author,
-        pandoc_args=pandoc_args,
-        config_path=cfg_path,
-        header_tex=args.header_tex,  # <-- add this line
-    )
     run(params)
 
 
