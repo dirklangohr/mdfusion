@@ -213,24 +213,17 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
         with cfg_path.open("r", encoding="utf-8") as f:
             toml_data = tomllib.load(f)
         conf = toml_data.get("mdfusion", {})
-        if "root_dir" in conf:
-            manual_defaults["root_dir"] = Path(conf["root_dir"])
-        if "output" in conf:
-            manual_defaults["output"] = conf["output"]
-        if conf.get("no_toc", False):
-            manual_defaults["no_toc"] = True
-        if conf.get("title_page", False):
-            manual_defaults["title_page"] = True
-        if "title" in conf:
-            manual_defaults["title"] = conf["title"]
-        if "author" in conf:
-            manual_defaults["author"] = conf["author"]
-        if "pandoc_args" in conf:
-            manual_defaults["pandoc_args"] = conf["pandoc_args"]
-        if "header_tex" in conf:
-            manual_defaults["header_tex"] = Path(
-                conf["header_tex"]
-            )  # <-- add this line
+        # Dynamically map config keys to RunParams fields
+        from dataclasses import fields
+        runparams_fields = {f.name: f.type for f in fields(RunParams)}
+        for k, v in conf.items():
+            if k in runparams_fields:
+                typ = runparams_fields[k]
+                # Convert to Path if needed
+                if typ == Path or typ == (Path | None):
+                    manual_defaults[k] = Path(v)
+                else:
+                    manual_defaults[k] = v
     return manual_defaults
 
 
