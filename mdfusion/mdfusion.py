@@ -271,6 +271,8 @@ def main():
     if extra:
         if not params.pandoc_args:
             params.pandoc_args = []
+        if isinstance(params.pandoc_args, str):
+            params.pandoc_args = params.pandoc_args.split()
         params.pandoc_args.extend(extra)
 
     # require root_dir after merging config and CLI
