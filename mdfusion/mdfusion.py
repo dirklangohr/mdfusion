@@ -196,17 +196,8 @@ def run(params: "RunParams"):
         shutil.rmtree(temp_dir)
 
 
-def main():
-    # 1) Manual read of .mdfusion [mdfusion] section
-    cfg_path = None
-    for i, a in enumerate(sys.argv):
-        if a in ("-c", "--config") and i + 1 < len(sys.argv):
-            cfg_path = Path(sys.argv[i + 1])
-            break
-    if cfg_path is None:
-        default_cfg = Path.cwd() / "mdfusion.toml"
-        if default_cfg.is_file():
-            cfg_path = default_cfg
+def load_config_defaults(cfg_path: Path | None) -> dict:
+    """Load config defaults from TOML file, if present."""
     manual_defaults: dict = {}
     if cfg_path and cfg_path.is_file():
         with cfg_path.open("r", encoding="utf-8") as f:
@@ -226,8 +217,25 @@ def main():
             manual_defaults["author"] = conf["author"]
         if "pandoc_args" in conf:
             manual_defaults["pandoc_args"] = conf["pandoc_args"]
+    return manual_defaults
 
-    # 2) Arg parsing
+
+def main():
+    # 1) Find config file path
+    cfg_path = None
+    for i, a in enumerate(sys.argv):
+        if a in ("-c", "--config") and i + 1 < len(sys.argv):
+            cfg_path = Path(sys.argv[i + 1])
+            break
+    if cfg_path is None:
+        default_cfg = Path.cwd() / "mdfusion.toml"
+        if default_cfg.is_file():
+            cfg_path = default_cfg
+
+    # 2) Load config defaults
+    manual_defaults = load_config_defaults(cfg_path)
+
+    # 3) Arg parsing
     parser = argparse.ArgumentParser(
         description=(
             "Merge all Markdown files under a directory into one PDF, "
