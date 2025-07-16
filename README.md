@@ -18,7 +18,9 @@ Merge all Markdown files in a directory tree into a single PDF with formatting v
 ## Installation
 
 ### Requirements
+
 The following applications must be available on `PATH`:
+
 - pandoc
 - xetex
 
