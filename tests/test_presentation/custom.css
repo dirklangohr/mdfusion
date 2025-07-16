@@ -1,5 +1,20 @@
+/* General styles */
 * {
     font-family: Arial, sans-serif;
-    background-color: #3b3603;
     color: #ffffff;
+}
+
+/* Background styles */
+body {
+    background: url('https://upload.wikimedia.org/wikipedia/commons/c/cc/Snail.jpg') no-repeat center center fixed !important;
+    background-size: cover;
+}
+
+/* Content container to make text readable */
+.reveal {
+    background-color: rgba(0, 0, 0, 0.7);
+    /* Semi-transparent black */
+    /* Semi-transparent background for readability */
+    padding: 20px;
+    border-radius: 10px;
 }
