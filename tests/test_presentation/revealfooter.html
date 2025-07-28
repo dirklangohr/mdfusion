@@ -19,8 +19,6 @@
             });
         }
     };
-    Reveal.initialize({
-        // your other options…
-        plugins: [RevealHighlight, FooterPlugin]
-    });
+    Reveal.registerPlugin(FooterPlugin);
+    Reveal.registerPlugin(RevealHighlight);
 </script>
