@@ -101,7 +101,13 @@ Snails have been symbols of:
 Snails are more than just slow-moving creatures; they are vital to ecosystems, fascinating in their biology, and rich in cultural symbolism.
 
 ----
-
-<p align="center" style="margin-top: 20px; font-family: Comic Sans MS, cursive; color: turquoise;">
-    🐌 Thank you for learning about snails! 🐌
+<p class="r-fit-text">
+    Thanks!
+</p>
+<p class="r-fit-text">
+    Any questions?
+</p>
+<p style="text-align: center;">
+    🐌🐌🐌🐌🐌
+    🐌🐌🐌🐌🐌
 </p>
