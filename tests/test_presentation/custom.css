@@ -11,3 +11,8 @@ body {
     /* make background darker for readability */
     backdrop-filter: brightness(0.4);
 }
+
+.reveal .slides section:not([id="title-slide"]) p,
+.reveal .slides section:not([id="title-slide"]) li {
+    text-align: left;
+}
