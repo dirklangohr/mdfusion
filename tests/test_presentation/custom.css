@@ -8,11 +8,6 @@
 body {
     background: url('https://upload.wikimedia.org/wikipedia/commons/c/cc/Snail.jpg') no-repeat center center fixed !important;
     background-size: cover;
-}
-
-/* Content container to make text readable */
-.reveal {
-    background-color: rgba(0, 0, 0, 0.7);
-    /* Semi-transparent black */
-    /* Semi-transparent background for readability */
+    /* make background darker for readability */
+    backdrop-filter: brightness(0.4);
 }
