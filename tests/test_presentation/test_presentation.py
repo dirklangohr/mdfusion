@@ -23,6 +23,8 @@ def test_presentation():
                     "-V", 'transition=convex',
                     "-V", "theme=moon",
                     "-V", "showSlideNumber=all",
-                    "-c", css_path
+                    "-c", css_path,
+                    "-H", "./testheader.html",
+                    "-A", "./revealfooter.html",
         ])
     mdfusion.run(params)

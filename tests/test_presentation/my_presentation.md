@@ -1,5 +1,38 @@
 # Snails: A Fascinating Journey
 
+## Example Code
+
+<pre>
+<code data-line-numbers="1|2|3-5|24"> let snail = 3
+function snailJourney() {
+    console.log("Snails are amazing creatures!");
+    return snail * 2;
+}
+
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+function calculateGoldenRatio() {
+    return (1 + Math.sqrt(5)) / 2;
+}
+
+function fibonacciSequence(n) {
+    let sequence = [];
+    for (let i = 0; i < n; i++) {
+        sequence.push(fibonacci(i));
+    }
+    return sequence;
+}
+
+function main() {
+    console.log("Snail Journey Result: " + snailJourney());
+    console.log("Fibonacci of 5: " + fibonacci(5));
+}
+</code>
+</pre>
+
 ## Introduction to Snails
 
 Snails are gastropod mollusks, known for their coiled shells and slow movement. They play an essential role in ecosystems.
