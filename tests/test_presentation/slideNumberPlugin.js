@@ -4,11 +4,11 @@ let SlideNumberPlugin = {
     init: function (deck) {
         const hideSlideNumbersOnPages = [0];
 
-        function createSlideNumbersDiv({ bottom = 10, bottomExtra = 0 } = {}) {
+        function createSlideNumbersDiv({ bottom = 10, bottomExtra = 0, offsetRight = 100 } = {}) {
             let slideNumbers = document.createElement('div');
             slideNumbers.className = 'slide-numbers';
             slideNumbers.style.position = 'absolute';
-            slideNumbers.style.right = '100px';
+            slideNumbers.style.right = `${offsetRight}px`;
             slideNumbers.style.bottom = `${bottom + bottomExtra}px`;
             slideNumbers.style.fontSize = '24px';
             slideNumbers.style.color = 'white';
@@ -55,7 +55,7 @@ let SlideNumberPlugin = {
                                 return;
                             }
                             // For print, show slide number as in the main view
-                            let slideNumbers = createSlideNumbersDiv();
+                            let slideNumbers = createSlideNumbersDiv({ offsetRight: 10 });
                             slideNumbers.innerText = `Slide ${pageIndex + 1} / ${totalSlides}`;
                             node.appendChild(slideNumbers);
                         }

@@ -22,7 +22,7 @@ def test_presentation():
                     "-V", 'slideNumber="c/t"',
                     "-V", 'transition=convex',
                     "-V", "theme=moon",
-                    "-V", "showSlideNumber=all",
+                    "-V", "showSlideNumber=none",
                     "-c", css_path,
                     "-H", "./testheader.html",
                     "-A", "./revealfooter.html",
