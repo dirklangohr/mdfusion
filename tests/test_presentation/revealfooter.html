@@ -1,34 +1,10 @@
 <script>
-    // Minimal Reveal.js plugin to show a footer on each slide
-    let FooterPlugin = {
-        id: 'footer',
-        init: function (deck) {
-            let footer = document.createElement('div');
-            footer.style.position = 'fixed';
-            footer.style.left = '0';
-            footer.style.right = '0';
-            footer.style.bottom = '10px';
-            footer.style.textAlign = 'center';
-            footer.style.fontSize = '36px';
-            footer.style.color = '#888';
-            footer.style.pointerEvents = 'none';
-            document.body.appendChild(footer);
-
-            function updateFooter() {
-                let indices = deck.getIndices();
-                let currentSlide = indices.h + indices.v + 1; // 1-based index
-                let totalSlides = deck.getTotalSlides();
-                footer.innerText = `My Custom Footer | Slide ${currentSlide} / ${totalSlides}`;
-            }
-
-            deck.on('ready', updateFooter);
-            deck.on('slidechanged', updateFooter);
-            deck.on('fragmentshown', updateFooter);
-            deck.on('fragmenthidden', updateFooter);
-            // Ensure footer is initialized on plugin load
-            setTimeout(updateFooter, 0);
-        }
-    };
+</script>
+<!-- Footer and slide number plugin -->
+<script src="headerFooterPlugin.js"></script>
+<script src="slideNumberPlugin.js"></script>
+<script>
     Reveal.registerPlugin(FooterPlugin);
     Reveal.registerPlugin(RevealHighlight);
+    Reveal.registerPlugin(SlideNumberPlugin);
 </script>
