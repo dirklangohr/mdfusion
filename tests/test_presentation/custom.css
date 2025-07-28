@@ -1,7 +1,10 @@
 /* General styles */
 * {
     font-family: Arial, sans-serif;
-    color: #ffffff;
+}
+
+.header-section-number {
+    font-size: 0.6em !important;
 }
 
 /* Background styles */
