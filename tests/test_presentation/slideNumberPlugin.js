@@ -2,12 +2,14 @@
 let SlideNumberPlugin = {
     id: 'slideNumber',
     init: function (deck) {
-        function createSlideNumbersDiv() {
+        const hideSlideNumbersOnPages = [0];
+
+        function createSlideNumbersDiv({ bottom = 10, bottomExtra = 0 } = {}) {
             let slideNumbers = document.createElement('div');
             slideNumbers.className = 'slide-numbers';
             slideNumbers.style.position = 'absolute';
             slideNumbers.style.right = '100px';
-            slideNumbers.style.bottom = '10px';
+            slideNumbers.style.bottom = `${bottom + bottomExtra}px`;
             slideNumbers.style.fontSize = '24px';
             slideNumbers.style.color = 'white';
             slideNumbers.style.pointerEvents = 'none';
@@ -19,10 +21,14 @@ let SlideNumberPlugin = {
             // Remove any existing slide numbers to avoid duplicates
             document.querySelectorAll('.slide-numbers').forEach(el => el.remove());
             let indices = deck.getIndices();
-            let currentSlide = indices.h + indices.v + 1; // 1-based index
+            let currentSlide = indices.h + indices.v;
             let totalSlides = deck.getTotalSlides();
-            let slideNumbers = createSlideNumbersDiv();
-            slideNumbers.innerText = `Slide ${currentSlide} / ${totalSlides}`;
+            if (hideSlideNumbersOnPages.includes(currentSlide)) {
+                return;
+            }
+
+            let slideNumbers = createSlideNumbersDiv({ bottomExtra: 3 });
+            slideNumbers.innerText = `Slide ${currentSlide + 1} / ${totalSlides}`;
             let reveal = document.querySelector('.reveal');
             if (reveal) {
                 reveal.appendChild(slideNumbers);
@@ -39,16 +45,19 @@ let SlideNumberPlugin = {
         const slidesEl = document.querySelector('.slides');
         if (slidesEl) {
             const obs = new MutationObserver(mutations => {
-                let pageIndex = 0
+                let pageIndex = -1 // start at -1
                 let totalSlides = deck.getTotalSlides();
                 mutations.forEach(m => {
                     m.addedNodes.forEach(node => {
                         if (node.classList && node.classList.contains('pdf-page')) {
+                            pageIndex++;
+                            if (hideSlideNumbersOnPages.includes(pageIndex)) {
+                                return;
+                            }
                             // For print, show slide number as in the main view
                             let slideNumbers = createSlideNumbersDiv();
                             slideNumbers.innerText = `Slide ${pageIndex + 1} / ${totalSlides}`;
                             node.appendChild(slideNumbers);
-                            pageIndex++;
                         }
                     });
                 });

@@ -3,7 +3,7 @@ let FooterPlugin = {
     id: 'footer',
     init: function (deck) {
 
-        const hideSlideNumbers = [0]
+        const hideFooterOnPages = [0]
 
         function createFooter({ bottom = 10, bottomExtra = 0 } = {}) {
             let footer = document.createElement('div');
@@ -26,7 +26,7 @@ let FooterPlugin = {
 
             let indices = deck.getIndices();
             let currentSlide = indices.h + indices.v; // 1-based index
-            if (hideSlideNumbers.includes(currentSlide)) {
+            if (hideFooterOnPages.includes(currentSlide)) {
                 return;
             }
 
@@ -43,7 +43,7 @@ let FooterPlugin = {
         const obs = new MutationObserver(mutations => {
             mutations.forEach((m, i) => {
                 m.addedNodes.forEach(node => {
-                    if (hideSlideNumbers.includes(i)) {
+                    if (hideFooterOnPages.includes(i)) {
                         return
                     }
                     if (node.classList && node.classList.contains('pdf-page')) {
