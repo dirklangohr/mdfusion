@@ -11,10 +11,3 @@ body {
     /* make background darker for readability */
     backdrop-filter: brightness(0.4);
 }
-
-@media print {
-    .hide-on-print {
-        display: none !important;
-        visibility: hidden !important;
-    }
-}
