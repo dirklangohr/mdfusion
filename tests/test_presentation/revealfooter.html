@@ -12,11 +12,21 @@
             footer.style.fontSize = '36px';
             footer.style.color = '#888';
             footer.style.pointerEvents = 'none';
-            footer.innerText = 'My Custom Footer'; // Change this text as needed
             document.body.appendChild(footer);
-            deck.on('slidechanged', function (event) {
-                // Optionally update footer text per slide here
-            });
+
+            function updateFooter() {
+                let indices = deck.getIndices();
+                let currentSlide = indices.h + indices.v + 1; // 1-based index
+                let totalSlides = deck.getTotalSlides();
+                footer.innerText = `My Custom Footer | Slide ${currentSlide} / ${totalSlides}`;
+            }
+
+            deck.on('ready', updateFooter);
+            deck.on('slidechanged', updateFooter);
+            deck.on('fragmentshown', updateFooter);
+            deck.on('fragmenthidden', updateFooter);
+            // Ensure footer is initialized on plugin load
+            setTimeout(updateFooter, 0);
         }
     };
     Reveal.registerPlugin(FooterPlugin);
