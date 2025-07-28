@@ -3,6 +3,8 @@ let FooterPlugin = {
     id: 'footer',
     init: function (deck) {
 
+        const hideSlideNumbers = [0]
+
         function createFooter({ bottom = 10, bottomExtra = 0 } = {}) {
             let footer = document.createElement('div');
             footer.className = 'slide-footer';
@@ -22,6 +24,12 @@ let FooterPlugin = {
             // Remove any existing footers to avoid duplicates
             document.querySelectorAll('.slide-footer').forEach(el => el.remove());
 
+            let indices = deck.getIndices();
+            let currentSlide = indices.h + indices.v; // 1-based index
+            if (hideSlideNumbers.includes(currentSlide)) {
+                return;
+            }
+
             footer = createFooter({ bottomExtra: 3 });
             footer.classList.add('hide-on-print');
             document.querySelector('.reveal').appendChild(footer);
@@ -33,8 +41,11 @@ let FooterPlugin = {
         // Add footer for print mode
         const slidesEl = document.querySelector('.slides');
         const obs = new MutationObserver(mutations => {
-            mutations.forEach(m => {
+            mutations.forEach((m, i) => {
                 m.addedNodes.forEach(node => {
+                    if (hideSlideNumbers.includes(i)) {
+                        return
+                    }
                     if (node.classList && node.classList.contains('pdf-page')) {
                         const footer = createFooter();
                         node.appendChild(footer);
