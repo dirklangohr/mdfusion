@@ -1,7 +1,26 @@
 <script>
-    // now that <div class="reveal">…</div> is in the DOM…
+    // Minimal Reveal.js plugin to show a footer on each slide
+    let FooterPlugin = {
+        id: 'footer',
+        init: function (deck) {
+            let footer = document.createElement('div');
+            footer.style.position = 'fixed';
+            footer.style.left = '0';
+            footer.style.right = '0';
+            footer.style.bottom = '10px';
+            footer.style.textAlign = 'center';
+            footer.style.fontSize = '36px';
+            footer.style.color = '#888';
+            footer.style.pointerEvents = 'none';
+            footer.innerText = 'My Custom Footer'; // Change this text as needed
+            document.body.appendChild(footer);
+            deck.on('slidechanged', function (event) {
+                // Optionally update footer text per slide here
+            });
+        }
+    };
     Reveal.initialize({
         // your other options…
-        plugins: [RevealHighlight]
+        plugins: [RevealHighlight, FooterPlugin]
     });
 </script>
