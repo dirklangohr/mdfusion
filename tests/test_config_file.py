@@ -25,7 +25,7 @@ no_toc = true
 title_page = true
 title = "Config Title"
 author = "Config Author"
-pandoc_args = "--number-sections"
+pandoc_args = ["--number-sections"]
 """
     )
 
@@ -54,6 +54,8 @@ pandoc_args = "--number-sections"
 
     # no_toc=true means --toc must NOT appear
     assert "--toc" not in cmd
+
+    print(cmd, file=sys.stderr)
 
     # title_page=true doesn't affect flags here, but pandoc_args does:
     assert "--number-sections" in cmd

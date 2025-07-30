@@ -211,9 +211,12 @@ class RunParams:
             )
 
 
-def run(params: "RunParams"):
+def run(params_: "RunParams"):
     if not requirements_met():
         return
+
+    # Merge config defaults with CLI args
+    params: RunParams = merge_cli_args_with_config(params_, params_.config_path)
 
     if not params.root_dir:
         print("Error: root_dir must be specified", file=sys.stderr)
@@ -317,11 +320,21 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
     return manual_defaults
 
 def merge_cli_args_with_config(cli_args: RunParams, config_path: Path | None) -> RunParams:
-    """Merge CLI args with config defaults. CLI args take precedence."""
+    """Merge CLI args with config defaults. CLI args take precedence. Arrays are merged."""
     manual_defaults = load_config_defaults(config_path)
     for k, v in manual_defaults.items():
-        if getattr(cli_args, k, None) in (None, False, [], ""):
-            setattr(cli_args, k, v)
+        current = getattr(cli_args, k, None)
+        # If the field is a list, merge arrays (config first, then CLI)
+        if isinstance(v, list):
+            if current is None or current == []:
+                setattr(cli_args, k, v)
+            else:
+                # Merge config and CLI arrays, CLI args take precedence (append config then CLI)
+                merged = v + [item for item in current if item not in v]
+                setattr(cli_args, k, merged)
+        else:
+            if current in (None, False, [], ""):
+                setattr(cli_args, k, v)
     return cli_args
 
 
@@ -365,8 +378,8 @@ def main():
     # Parse known args, allow extra pandoc args
     args, extra = parser.parse_known_args()
 
-    # Merge config defaults with CLI args
-    params: RunParams = merge_cli_args_with_config(args.params, cfg_path)
+    params = args.params
+    params.config_path = cfg_path
 
     # Handle extra pandoc args
     if extra:
@@ -375,10 +388,6 @@ def main():
         if isinstance(params.pandoc_args, str):
             params.pandoc_args = params.pandoc_args.split()
         params.pandoc_args.extend(extra)
-
-    # require root_dir after merging config and CLI
-    if not params.root_dir:
-        parser.error("you must specify root_dir (or provide it in the config file)")
 
     run(params)
 
