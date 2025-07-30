@@ -278,6 +278,24 @@ def run(params_: "RunParams"):
         cmd.extend(params.pandoc_args)
 
         run_pandoc_with_spinner(cmd, out_pdf)
+        
+        
+        """
+        Create a js object with the custom plugin config
+        So we can read the values from the HTML file/ Reveal plugins
+        """
+        # Prepare inline config script
+        config_script = f"<script>window.config = {{ footerText: '{params.footer_text}' }};</script>"
+        
+        # Inject inline window.config script into <head> in HTML output
+        output_file = Path(out_pdf)
+        html_content = output_file.read_text(encoding="utf-8")
+        if "</head>" in html_content:
+            html_content = html_content.replace("</head>", f"{config_script}\n</head>")
+        else:
+            html_content = f"{config_script}\n" + html_content
+        output_file.write_text(html_content, encoding="utf-8")
+        
                 
         # If output is HTML, bundle it with htmlark
         # (always do this because custom plugins wont work otherwise)
@@ -295,22 +313,6 @@ def run(params_: "RunParams"):
                     if item.is_file():
                         shutil.copy(item, temp_dir / item.name)
 
-
-            """
-            Create a js object with the custom plugin config
-            So we can read the values from the HTML file/ Reveal plugins
-            """
-            # Prepare inline config script
-            config_script = f"<script>window.config = {{ footerText: '{params.footer_text}' }};</script>"
-            
-            # Inject inline window.config script into <head> in temp_output
-            html_content = temp_output.read_text(encoding="utf-8")
-            if "</head>" in html_content:
-                html_content = html_content.replace("</head>", f"{config_script}\n</head>")
-            else:
-                html_content = f"{config_script}\n" + html_content
-            temp_output.write_text(html_content, encoding="utf-8")
-            
             bundle_html(temp_output, final_output)
                 
         # if output is html presentation, convert to pdf as well
