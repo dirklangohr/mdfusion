@@ -9,7 +9,12 @@ description = "Merge Markdown files into a single PDF with Pandoc + XeLaTeX"
 readme = "README.md"
 authors = [{ name = "ejuet" }]
 requires-python = ">=3.8"
-dependencies = ["toml", "tdqm", "simple-parsing"]
+dependencies = [
+    "toml",
+    "tdqm",
+    "simple-parsing",
+    "htmlark @ git+https://github.com/ejuet/htmlark.git",
+]
 
 [project.scripts]
 mdfusion = "mdfusion.mdfusion:main"
