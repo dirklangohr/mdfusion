@@ -279,6 +279,9 @@ def run(params: "RunParams"):
                 print(f"Bundled HTML written to {final_output}")
             finally:
                 os.chdir(old_cwd)
+    except Exception as e:
+        print(f"Error during processing: {e}", file=sys.stderr)
+        sys.exit(1)
     finally:
         shutil.rmtree(temp_dir)
 
