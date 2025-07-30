@@ -187,7 +187,6 @@ def run(params: "RunParams"):
             user_header = Path.cwd() / "header.tex"
         if not user_header.is_file():
             user_header = None
-        hdr = build_header(user_header)
         merged = temp_dir / "merged.md"
         merge_markdown(md_files, merged, metadata)
 
@@ -205,12 +204,16 @@ def run(params: "RunParams"):
             "--pdf-engine=xelatex",
             f"--resource-path={resource_path}",
         ]
+        # If md will be converted to latex, use latex header
         if out_pdf.endswith(".pdf"):
+            hdr = build_header(user_header)
             cmd.append(f"--include-in-header={hdr}")
+
         if not params.no_toc:
             cmd.append("--toc")
         if params.debug and out_pdf.endswith(".pdf"): # todo does -v really only apply to PDF?
             cmd.append("-v")
+        
         cmd.extend(params.pandoc_args)
 
         if params.debug:
