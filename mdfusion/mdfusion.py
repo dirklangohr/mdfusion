@@ -23,11 +23,6 @@ import toml as tomllib  # type: ignore
 from dataclasses import dataclass, field
 from simple_parsing import ArgumentParser
 
-_TOML_BINARY = False
-
-# Regex to find Markdown image links that are NOT already URLs
-IMAGE_RE = re.compile(r"!\[([^\]]*)\]\((?!https?://)([^)]+)\)")
-
 
 def natural_key(s: str):
     return [int(tok) if tok.isdigit() else tok.lower() for tok in re.split(r"(\d+)", s)]
@@ -72,6 +67,13 @@ def create_metadata(title: str, author: str) -> str:
 
 
 def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None:
+    """
+    Merge multiple Markdown files into one, rewriting image links to absolute paths.
+    """
+    
+    # Regex to find Markdown image links that are NOT already URLs
+    IMAGE_RE = re.compile(r"!\[([^\]]*)\]\((?!https?://)([^)]+)\)")
+    
     with merged_md.open("w", encoding="utf-8") as out:
         if metadata:
             out.write(metadata)
@@ -390,10 +392,6 @@ def main():
 
     # Handle extra pandoc args
     if extra:
-        if not params.pandoc_args:
-            params.pandoc_args = []
-        if isinstance(params.pandoc_args, str):
-            params.pandoc_args = params.pandoc_args.split()
         params.pandoc_args.extend(extra)
 
     run(params)
