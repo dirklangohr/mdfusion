@@ -190,7 +190,6 @@ class RunParams:
     pandoc_args: list[str] = field(default_factory=list)  # extra pandoc arguments, whitespace-separated
     config_path: Path | None = None  # path to a mdfusion.toml TOML config file
     header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
-    debug: bool = False  # if True, print all Pandoc output and use verbose mode
     presentation: bool = False  # if True, use reveal.js presentation mode
     # Add help strings for simple-parsing
     def __post_init__(self):
@@ -264,33 +263,18 @@ def run(params: "RunParams"):
 
         if not params.no_toc:
             cmd.append("--toc")
-        if params.debug and out_pdf.endswith(".pdf"): # todo does -v really only apply to PDF?
-            cmd.append("-v")
         
         cmd.extend(params.pandoc_args)
 
-        if params.debug:
-            # Always print all output from Pandoc
-            print(f"[DEBUG] Running: {' '.join(cmd)}")
+        # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
+        if not sys.stdout.isatty():
             try:
-                result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-                print(result.stdout)
-                print(result.stderr, file=sys.stderr)
+                subprocess.run(cmd, check=True, capture_output=True, text=True)
                 print(f"Merged PDF written to {out_pdf}")
             except subprocess.CalledProcessError as e:
-                print(e.stdout)
-                print(e.stderr, file=sys.stderr)
                 handle_pandoc_error(e, cmd)
         else:
-            # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
-            if not sys.stdout.isatty():
-                try:
-                    subprocess.run(cmd, check=True, capture_output=True, text=True)
-                    print(f"Merged PDF written to {out_pdf}")
-                except subprocess.CalledProcessError as e:
-                    handle_pandoc_error(e, cmd)
-            else:
-                run_pandoc_with_spinner(cmd, out_pdf)
+            run_pandoc_with_spinner(cmd, out_pdf)
                 
         # If output is HTML, bundle it with htmlark
         final_output = Path(out_pdf)
