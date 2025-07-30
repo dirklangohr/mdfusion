@@ -19,12 +19,10 @@ def test_presentation():
         footer_text="A fun presentation about snails",
         pandoc_args=["--slide-level", "6",
                     "--number-sections",
-                    "-V", "autoSlide=5000",
-                    "-V", 'slideNumber="c/t"',
                     "-V", 'transition=fade',
-                    "-V", "theme=night",
-                    "-V", "showSlideNumber=none",
-                    "-V", 'center=false',
+                    # "-V", "theme=night",
+                    # "-V", 'center=false',
+                    "-V", "showSlideNumber=none", # todo make this default
                     "-c", css_path,
         ])
     mdfusion.run(params)

@@ -104,10 +104,10 @@ Snails are more than just slow-moving creatures; they are vital to ecosystems, f
 <p class="r-fit-text">
     Thanks!
 </p>
-<p class="r-fit-text">
-    Any questions?
-</p>
 <p style="text-align: center;">
     🐌🐌🐌🐌🐌
     🐌🐌🐌🐌🐌
+</p>
+<p style="text-align: center;">
+    Any questions?
 </p>
