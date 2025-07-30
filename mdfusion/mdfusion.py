@@ -193,6 +193,8 @@ class RunParams:
     config_path: Path | None = None  # path to a mdfusion.toml TOML config file
     header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
     presentation: bool = False  # if True, use reveal.js presentation mode
+    footer_text: str | None = ""  # custom footer text for presentations
+    
     # Add help strings for simple-parsing
     def __post_init__(self):
         # Ensure pandoc_args is always a list of strings
@@ -278,6 +280,7 @@ def run(params_: "RunParams"):
         run_pandoc_with_spinner(cmd, out_pdf)
                 
         # If output is HTML, bundle it with htmlark
+        # (always do this because custom plugins wont work otherwise)
         final_output = Path(out_pdf)
         if str(out_pdf).endswith(".html"):
             # create a temp folder that contains the html and all necessary files:
@@ -291,6 +294,22 @@ def run(params_: "RunParams"):
                 for item in public_dir.iterdir():
                     if item.is_file():
                         shutil.copy(item, temp_dir / item.name)
+
+
+            """
+            Create a js object with the custom plugin config
+            So we can read the values from the HTML file/ Reveal plugins
+            """
+            # Prepare inline config script
+            config_script = f"<script>window.config = {{ footerText: '{params.footer_text}' }};</script>"
+            
+            # Inject inline window.config script into <head> in temp_output
+            html_content = temp_output.read_text(encoding="utf-8")
+            if "</head>" in html_content:
+                html_content = html_content.replace("</head>", f"{config_script}\n</head>")
+            else:
+                html_content = f"{config_script}\n" + html_content
+            temp_output.write_text(html_content, encoding="utf-8")
             
             bundle_html(temp_output, final_output)
                 

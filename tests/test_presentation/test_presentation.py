@@ -16,6 +16,7 @@ def test_presentation():
         title="Snails: The Ultimate Guide",
         author="From a loving snail fan",
         presentation=True,
+        footer_text="A fun presentation about snails",
         pandoc_args=["--slide-level", "6",
                     "--number-sections",
                     "-V", "autoSlide=5000",

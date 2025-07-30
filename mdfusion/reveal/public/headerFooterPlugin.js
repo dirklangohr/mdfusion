@@ -16,7 +16,7 @@ let FooterPlugin = {
             footer.style.fontSize = '24px';
             footer.style.color = 'white';
             footer.style.pointerEvents = 'none';
-            footer.innerText = 'My Custom Footer Text';
+            footer.innerText = window.config.footerText;
             return footer;
         }
 
