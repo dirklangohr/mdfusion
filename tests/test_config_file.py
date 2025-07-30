@@ -32,19 +32,15 @@ pandoc_args = "--number-sections"
     # 3) chdir into tmp_path so script sees ./​.mdfusion
     monkeypatch.chdir(tmp_path)
 
-    # 4) Stub out subprocess.run to capture the cmd
+    # 4) Stub out mdfusion.run_pandoc_with_spinner to capture the cmd
     captured = {}
 
-    def fake_run(cmd, check, capture_output, text):
+    def fake_spinner(cmd, out_pdf):
         captured["cmd"] = cmd
-
-        class Result:
-            pass
-
-        return Result()
+        print(f"Merged PDF written to {out_pdf}")
 
     # call with no args => pick up config
-    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(mdfusion, "run_pandoc_with_spinner", fake_spinner)
     mdfusion.main()
 
     # 6) Check printed output

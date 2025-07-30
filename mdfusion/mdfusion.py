@@ -266,15 +266,7 @@ def run(params: "RunParams"):
         
         cmd.extend(params.pandoc_args)
 
-        # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
-        if not sys.stdout.isatty():
-            try:
-                subprocess.run(cmd, check=True, capture_output=True, text=True)
-                print(f"Merged PDF written to {out_pdf}")
-            except subprocess.CalledProcessError as e:
-                handle_pandoc_error(e, cmd)
-        else:
-            run_pandoc_with_spinner(cmd, out_pdf)
+        run_pandoc_with_spinner(cmd, out_pdf)
                 
         # If output is HTML, bundle it with htmlark
         final_output = Path(out_pdf)
