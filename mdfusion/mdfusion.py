@@ -284,6 +284,7 @@ def run(params_: "RunParams"):
         Create a js object with the custom plugin config
         So we can read the values from the HTML file/ Reveal plugins
         """
+        # TODO allow including html files for this
         # Prepare inline config script
         config_script = f"<script>window.config = {{ footerText: '{params.footer_text}' }};</script>"
         
