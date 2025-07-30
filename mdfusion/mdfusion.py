@@ -200,53 +200,58 @@ def run(params: "RunParams"):
 
         default_output = f"{params.root_dir.name}.pdf" if not params.presentation else f"{params.root_dir.name}.html"
         out_pdf = params.output or default_output
-        temp_output = temp_dir / (Path(out_pdf).name)
         cmd = [
             "pandoc",
             "-s",
             str(merged),
             "-o",
-            str(temp_output),
+            out_pdf,
             "--pdf-engine=xelatex",
             f"--resource-path={resource_path}",
         ]
         # If md will be converted to latex, use latex header
-        if str(temp_output).endswith(".pdf"):
+        if out_pdf.endswith(".pdf"):
             hdr = build_header(user_header)
             cmd.append(f"--include-in-header={hdr}")
 
         if not params.no_toc:
             cmd.append("--toc")
-        if params.debug and str(temp_output).endswith(".pdf"): # todo does -v really only apply to PDF?
+        if params.debug and out_pdf.endswith(".pdf"): # todo does -v really only apply to PDF?
             cmd.append("-v")
         
         cmd.extend(params.pandoc_args)
 
-        # Run pandoc
         if params.debug:
+            # Always print all output from Pandoc
             print(f"[DEBUG] Running: {' '.join(cmd)}")
             try:
                 result = subprocess.run(cmd, check=True, text=True, capture_output=True)
                 print(result.stdout)
                 print(result.stderr, file=sys.stderr)
-                print(f"Pandoc output written to {temp_output}")
+                print(f"Merged PDF written to {out_pdf}")
             except subprocess.CalledProcessError as e:
                 print(e.stdout)
                 print(e.stderr, file=sys.stderr)
                 handle_pandoc_error(e, cmd)
         else:
+            # If not running in a TTY (e.g., during tests), use subprocess.run for compatibility
             if not sys.stdout.isatty():
                 try:
                     subprocess.run(cmd, check=True, capture_output=True, text=True)
-                    print(f"Pandoc output written to {temp_output}")
+                    print(f"Merged PDF written to {out_pdf}")
                 except subprocess.CalledProcessError as e:
                     handle_pandoc_error(e, cmd)
             else:
-                run_pandoc_with_spinner(cmd, str(temp_output))
-
+                run_pandoc_with_spinner(cmd, out_pdf)
+                
         # If output is HTML, bundle it with htmlark
         final_output = Path(out_pdf)
-        if str(temp_output).endswith(".html"):
+        if str(out_pdf).endswith(".html"):
+            temp_output = temp_dir / (Path(out_pdf).name)
+            
+            # copy the HTML output to a temp file
+            shutil.copy(str(final_output), str(temp_output))
+            
             # copy public folder content into temp directory
             public_dir = Path(os.path.join(os.path.dirname(__file__), "reveal", "public"))
             if public_dir.is_dir():
@@ -260,7 +265,6 @@ def run(params: "RunParams"):
                 import htmlark
             except ImportError:
                 print("Error: htmlark is required to bundle HTML output.", file=sys.stderr)
-                shutil.copy(str(temp_output), str(final_output))
             else:
                 print("bundling ", str(temp_output))
                 bundled_html = htmlark.convert_page(
@@ -275,9 +279,6 @@ def run(params: "RunParams"):
                 print(f"Bundled HTML written to {final_output}")
             finally:
                 os.chdir(old_cwd)
-        else:
-            shutil.copy(str(temp_output), str(final_output))
-            print(f"Output written to {final_output}")
     finally:
         shutil.rmtree(temp_dir)
 
