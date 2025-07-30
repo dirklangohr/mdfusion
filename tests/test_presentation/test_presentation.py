@@ -25,7 +25,5 @@ def test_presentation():
                     "-V", "showSlideNumber=none",
                     "-V", 'center=false',
                     "-c", css_path,
-                    "-H", "./testheader.html",
-                    "-A", "./revealfooter.html",
         ])
     mdfusion.run(params)

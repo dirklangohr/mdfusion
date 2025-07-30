@@ -7,6 +7,7 @@ Pandoc + XeLaTeX with centered section headings and small margins.
 Supports optional title page with metadata, plus config-file support.
 """
 
+import os
 import sys
 import re
 import subprocess
@@ -149,12 +150,16 @@ class RunParams:
             if self.output and not self.output.lower().endswith(".html"):
                 raise ValueError("Output file for presentations must be HTML, got: " + self.output)
             
+            path_to_reveal = os.path.join(os.path.dirname(__file__), "reveal")
+            
             self.pandoc_args.extend(
                 [
                     "-t",
                     "revealjs",
                     "-V",
                     "revealjs-url=https://cdn.jsdelivr.net/npm/reveal.js@4",
+                    "-H", os.path.join(path_to_reveal, "header.html"),
+                    "-A", os.path.join(path_to_reveal, "footer.html")
                 ]
             )
 
