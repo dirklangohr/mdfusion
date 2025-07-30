@@ -299,14 +299,13 @@ def run(params_: "RunParams"):
         shutil.rmtree(temp_dir)
 
 
-def load_config_defaults(cfg_path: Path | None) -> dict:
-    """Load config defaults from TOML file, if present."""
-    manual_defaults: dict = {}
+def load_config_defaults(cfg_path: Path | None) -> RunParams:
+    """Load config defaults from TOML file, if present. Returns RunParams object."""
+    params = RunParams()
     if cfg_path and cfg_path.is_file():
         with cfg_path.open("r", encoding="utf-8") as f:
             toml_data = tomllib.load(f)
         conf = toml_data.get("mdfusion", {})
-        # Dynamically map config keys to RunParams fields
         from dataclasses import fields
         runparams_fields = {f.name: f.type for f in fields(RunParams)}
         for k, v in conf.items():
@@ -314,22 +313,24 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
                 typ = runparams_fields[k]
                 # Convert to Path if needed
                 if typ == Path or typ == (Path | None):
-                    manual_defaults[k] = Path(v)
+                    setattr(params, k, Path(v))
                 else:
-                    manual_defaults[k] = v
-    return manual_defaults
+                    setattr(params, k, v)
+    return params
 
 def merge_cli_args_with_config(cli_args: RunParams, config_path: Path | None) -> RunParams:
     """Merge CLI args with config defaults. CLI args take precedence. Arrays are merged."""
-    manual_defaults = load_config_defaults(config_path)
-    for k, v in manual_defaults.items():
+    config_params = load_config_defaults(config_path)
+    from dataclasses import fields
+    for f in fields(RunParams):
+        k = f.name
+        v = getattr(config_params, k, None)
         current = getattr(cli_args, k, None)
         # If the field is a list, merge arrays (config first, then CLI)
         if isinstance(v, list):
             if current is None or current == []:
                 setattr(cli_args, k, v)
             else:
-                # Merge config and CLI arrays, CLI args take precedence (append config then CLI)
                 merged = v + [item for item in current if item not in v]
                 setattr(cli_args, k, merged)
         else:
