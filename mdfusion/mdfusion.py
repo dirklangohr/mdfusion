@@ -324,6 +324,14 @@ def load_config_defaults(cfg_path: Path | None) -> dict:
                     manual_defaults[k] = v
     return manual_defaults
 
+def merge_cli_args_with_config(cli_args: RunParams, config_path: Path | None) -> RunParams:
+    """Merge CLI args with config defaults. CLI args take precedence."""
+    manual_defaults = load_config_defaults(config_path)
+    for k, v in manual_defaults.items():
+        if getattr(cli_args, k, None) in (None, False, [], ""):
+            setattr(cli_args, k, v)
+    return cli_args
+
 
 def requirements_met() -> bool:
     """Check if requirements are met."""
@@ -340,19 +348,18 @@ def requirements_met() -> bool:
 
 
 def main():
-    # 1) Find config file path
+    # Check if config is specified via -c/--config
     cfg_path = None
     for i, a in enumerate(sys.argv):
         if a in ("-c", "--config") and i + 1 < len(sys.argv):
             cfg_path = Path(sys.argv[i + 1])
             break
+        
+    # If no config specified, check for mdfusion.toml in cwd
     if cfg_path is None:
         default_cfg = Path.cwd() / "mdfusion.toml"
         if default_cfg.is_file():
             cfg_path = default_cfg
-
-    # 2) Load config defaults
-    manual_defaults = load_config_defaults(cfg_path)
 
     # 3) Arg parsing using simple-parsing
     parser = ArgumentParser(
@@ -367,10 +374,7 @@ def main():
     args, extra = parser.parse_known_args()
 
     # Merge config defaults with CLI args
-    params: RunParams = args.params
-    for k, v in manual_defaults.items():
-        if getattr(params, k, None) in (None, False, [], ""):
-            setattr(params, k, v)
+    params: RunParams = merge_cli_args_with_config(args.params, cfg_path)
 
     # Handle extra pandoc args
     if extra:
