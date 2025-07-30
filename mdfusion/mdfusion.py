@@ -130,6 +130,25 @@ def run_pandoc_with_spinner(cmd, out_pdf):
     except subprocess.CalledProcessError as e:
         handle_pandoc_error(e, cmd)
 
+def html_to_pdf(input_html: Path, output_pdf: Path | None = None):
+    """Convert HTML to PDF using Playwright."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print("Error: Playwright is required for PDF conversion.", file=sys.stderr)
+        sys.exit(1)
+
+    if output_pdf is None:
+        output_pdf = input_html.with_suffix(".pdf")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        url = "file://" + str(input_html.resolve())
+        page.goto(url + "?print-pdf", wait_until="networkidle")
+        page.locator(".reveal.ready").wait_for()
+        page.pdf(path=output_pdf, prefer_css_page_size=True)
+        browser.close()
 
 @dataclass
 class RunParams:
@@ -282,24 +301,8 @@ def run(params: "RunParams"):
                 
         # if output is html presentation, convert to pdf as well
         if params.presentation:
-            try:
-                from playwright.sync_api import sync_playwright
-            except ImportError:
-                print("Error: Playwright is required for PDF conversion.", file=sys.stderr)
-                sys.exit(1)
-            with sync_playwright() as p:
-                browser = p.chromium.launch()
-                page = browser.new_page()
-                url = "file://" + str(final_output)
-
-                page.goto(url + "?print-pdf", wait_until="networkidle")
-                page.locator(".reveal.ready").wait_for()
-                
-                pdf_output = final_output.with_suffix(".pdf")
-                page.pdf(path=str(pdf_output), prefer_css_page_size=True)
-                
-                browser.close()
-                print(f"Converted presentation HTML to PDF: {pdf_output}")
+            html_to_pdf(final_output)
+            print(f"Converted HTML presentation to PDF: {final_output.with_suffix('.pdf')}")
     except Exception as e:
         print(f"Error during processing: {e}", file=sys.stderr)
         sys.exit(1)
