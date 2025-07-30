@@ -279,6 +279,27 @@ def run(params: "RunParams"):
                 print(f"Bundled HTML written to {final_output}")
             finally:
                 os.chdir(old_cwd)
+                
+        # if output is html presentation, convert to pdf as well
+        if params.presentation:
+            try:
+                from playwright.sync_api import sync_playwright
+            except ImportError:
+                print("Error: Playwright is required for PDF conversion.", file=sys.stderr)
+                sys.exit(1)
+            with sync_playwright() as p:
+                browser = p.chromium.launch()
+                page = browser.new_page()
+                url = "file://" + str(final_output)
+
+                page.goto(url + "?print-pdf", wait_until="networkidle")
+                page.locator(".reveal.ready").wait_for()
+                
+                pdf_output = final_output.with_suffix(".pdf")
+                page.pdf(path=str(pdf_output), prefer_css_page_size=True)
+                
+                browser.close()
+                print(f"Converted presentation HTML to PDF: {pdf_output}")
     except Exception as e:
         print(f"Error during processing: {e}", file=sys.stderr)
         sys.exit(1)
