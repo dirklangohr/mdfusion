@@ -187,18 +187,22 @@ class RunParams:
     title_page: bool = False  # include a title page
     title: str | None = None  # title for title page (defaults to dirname)
     author: str | None = None  # author for title page (defaults to OS user)
-    pandoc_args: list[str] = field(default_factory=list)  # extra pandoc arguments, whitespace-separated
+    pandoc_args: list[str] | str = field(default_factory=list)  # extra pandoc arguments, whitespace-separated
     config_path: Path | None = None  # path to a mdfusion.toml TOML config file
     header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
     presentation: bool = False  # if True, use reveal.js presentation mode
     # Add help strings for simple-parsing
     def __post_init__(self):
+        # Ensure pandoc_args is always a list of strings
+        if isinstance(self.pandoc_args, str):
+            self.pandoc_args = self.pandoc_args.split()
+        elif not isinstance(self.pandoc_args, list):
+            self.pandoc_args = list(self.pandoc_args)
+
         if self.presentation:
             if self.output and not self.output.lower().endswith(".html"):
                 raise ValueError("Output file for presentations must be HTML, got: " + self.output)
-            
             path_to_reveal = os.path.join(os.path.dirname(__file__), "reveal")
-            
             self.pandoc_args.extend(
                 [
                     "-t",
@@ -316,6 +320,8 @@ def load_config_defaults(cfg_path: Path | None) -> RunParams:
                     setattr(params, k, Path(v))
                 else:
                     setattr(params, k, v)
+                    
+    params.__post_init__()  # Ensure pandoc_args is a list
     return params
 
 def merge_cli_args_with_config(cli_args: RunParams, config_path: Path | None) -> RunParams:

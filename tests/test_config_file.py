@@ -25,7 +25,7 @@ no_toc = true
 title_page = true
 title = "Config Title"
 author = "Config Author"
-pandoc_args = ["--number-sections"]
+pandoc_args ="--number-sections"
 """
     )
 
