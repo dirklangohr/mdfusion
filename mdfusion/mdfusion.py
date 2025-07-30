@@ -149,6 +149,35 @@ def html_to_pdf(input_html: Path, output_pdf: Path | None = None):
         page.locator(".reveal.ready").wait_for()
         page.pdf(path=output_pdf, prefer_css_page_size=True)
         browser.close()
+        
+def bundle_html(input_html: Path, output_html: Path | None = None):
+    """Bundle HTML with htmlark."""
+    try:
+        import htmlark
+    except ImportError:
+        print("Error: htmlark is required to bundle HTML output.", file=sys.stderr)
+        sys.exit(1)
+        
+        
+    old_cwd = os.getcwd()
+    os.chdir(input_html.parent)
+
+    bundled_html = htmlark.convert_page(
+        str(input_html),
+        ignore_errors=False,
+        ignore_images=False,
+        ignore_css=False,
+        ignore_js=False
+    )
+    
+    os.chdir(old_cwd)
+    
+    if output_html is None:
+        output_html = input_html
+    
+    with open(output_html, "w", encoding="utf-8") as f:
+        f.write(bundled_html)
+    print(f"Bundled HTML written to {output_html}")
 
 @dataclass
 class RunParams:
@@ -266,9 +295,9 @@ def run(params: "RunParams"):
         # If output is HTML, bundle it with htmlark
         final_output = Path(out_pdf)
         if str(out_pdf).endswith(".html"):
-            temp_output = temp_dir / (Path(out_pdf).name)
-            
+            # create a temp folder that contains the html and all necessary files:
             # copy the HTML output to a temp file
+            temp_output = temp_dir / (Path(out_pdf).name)
             shutil.copy(str(final_output), str(temp_output))
             
             # copy public folder content into temp directory
@@ -278,26 +307,7 @@ def run(params: "RunParams"):
                     if item.is_file():
                         shutil.copy(item, temp_dir / item.name)
             
-            old_cwd = os.getcwd()
-            os.chdir(temp_dir)
-            try:
-                import htmlark
-            except ImportError:
-                print("Error: htmlark is required to bundle HTML output.", file=sys.stderr)
-            else:
-                print("bundling ", str(temp_output))
-                bundled_html = htmlark.convert_page(
-                    str(temp_output),
-                    ignore_errors=False,
-                    ignore_images=False,
-                    ignore_css=False,
-                    ignore_js=False
-                )
-                with open(final_output, "w", encoding="utf-8") as f:
-                    f.write(bundled_html)
-                print(f"Bundled HTML written to {final_output}")
-            finally:
-                os.chdir(old_cwd)
+            bundle_html(temp_output, final_output)
                 
         # if output is html presentation, convert to pdf as well
         if params.presentation:
