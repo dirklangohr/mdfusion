@@ -1,0 +1,3 @@
+[submodule "mdfusion/htmlark"]
+	path = mdfusion/htmlark
+	url = https://github.com/ejuet/htmlark.git
