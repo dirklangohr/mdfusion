@@ -22,7 +22,6 @@ def test_presentation():
                     "-V", 'transition=fade',
                     # "-V", "theme=night",
                     # "-V", 'center=false',
-                    "-V", "showSlideNumber=none", # todo make this default
                     "-c", css_path,
         ])
     mdfusion.run(params)
