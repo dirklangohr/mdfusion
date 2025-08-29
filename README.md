@@ -1,17 +1,18 @@
 # mdfusion
 
-Merge all Markdown files in a directory tree into a single PDF with formatting via Pandoc + XeLaTeX.
+Merge all Markdown files in a directory tree into a single PDF or HTML presentation with formatting via Pandoc + XeLaTeX.
 
 ---
 
 ## Features
 
-- **Recursive Markdown merge:** Collects and sorts all `.md` files under a directory (natural sort order).
-- **PDF output via Pandoc + XeLaTeX:** Produces a polished PDF with centered section headings and small margins.
-- **Title page and metadata:** Optional title page with configurable title, author, and date.
-- **Config file support:** Use a `mdfusion.toml` config file for repeatable builds.
-- **Custom LaTeX header:** Inject your own LaTeX via `header.tex` if desired.
-- **Image link rewriting:** Converts relative image links to absolute paths, so identically-named images in different folders don't collide.
+- **Recursively collects and sorts** all `.md` files under a directory (natural sort order)
+- **Merges** them into one document, rewriting image links to absolute paths (so images with the same name in different folders don't collide)
+- **Optionally adds a title page** with configurable title, author, and date
+- **Supports both PDF (via Pandoc + XeLaTeX) and HTML presentations (via reveal.js)**
+- **Customizes output** with your own LaTeX or HTML headers/footers
+- **Configurable via TOML** for repeatable builds (great for books, reports, or slides)
+- **Bundles HTML presentations** with all assets for easy sharing
 
 ---
 
@@ -19,10 +20,14 @@ Merge all Markdown files in a directory tree into a single PDF with formatting v
 
 ### Requirements
 
-The following applications must be available on `PATH`:
+You must have the following on your `PATH`:
 
-- pandoc
-- xetex
+- [pandoc](https://pandoc.org/)
+- [xetex](https://www.tug.org/xetex/) (for PDF output)
+
+For HTML presentations and PDF export from HTML, you may also want to install:
+
+- [Playwright](https://playwright.dev/python/) (for HTML→PDF conversion) via `pip install playwright` and then `playwright install`
 
 ### Install via pip
 
@@ -32,12 +37,10 @@ pip install mdfusion
 
 ### Install from source
 
-1. **Clone this repo**
-2. Install Python 3.8+ and [Pandoc](https://pandoc.org/) with XeLaTeX support
-3. Install the `mdfusion` package:
-
 ```sh
-pip install ./mdfusion
+git clone https://github.com/ejuet/mdfusion.git
+cd mdfusion
+pip install .
 ```
 
 ---
@@ -50,35 +53,60 @@ mdfusion ROOT_DIR [OPTIONS]
 
 ### Common options
 
-- `-o, --output FILE`      Output PDF filename (default: `<root_dir>.pdf`)
+- `-o, --output FILE`      Output filename (default: `<root_dir>.pdf` or `.html` for presentations)
 - `--no-toc`               Omit table of contents
-- `--title-page`           Include a title page
+- `--title-page`           Include a title page (PDF only)
 - `--title TITLE`          Set title for title page (default: directory name)
 - `--author AUTHOR`        Set author for title page (default: OS user)
 - `--pandoc-args ARGS`     Extra Pandoc arguments (whitespace-separated)
 - `-c, --config FILE`      Path to a `mdfusion.toml` config file (default: `mdfusion.toml` in the current directory)
+- `--presentation`         Output as a reveal.js HTML presentation (not PDF)
+- `--footer-text TEXT`     Custom footer for presentations
 
-### Example
+### Example: Merge docs/ into a PDF with a title page
 
 ```sh
 mdfusion --title-page --title "My Book" --author "Jane Doe" docs/
+```
+
+### Example: Create a reveal.js HTML presentation
+
+```sh
+mdfusion --presentation --title "My Talk" --author "Speaker" --footer-text "My Conference 2025" slides/
 ```
 
 ---
 
 ## Configuration file
 
-You can create a `mdfusion.toml` file in your project directory:
+You can create a `mdfusion.toml` file in your project directory to avoid long command lines. The `[mdfusion]` section supports all the same options as the CLI.
 
-```ini
+### Example: Normal document (PDF)
+
+```toml
 [mdfusion]
-root_dir = docs
-output = my-book.pdf
-no_toc = true
+root_dir = "docs"
+output = "my-book.pdf"
+no_toc = false
 title_page = true
-title = My Book
-author = Jane Doe
-pandoc_args = --number-sections
+title = "My Book"
+author = "Jane Doe"
+pandoc_args = ["--number-sections", "--slide-level", "2"]
+# header_tex = "header.tex"  # Optional: custom LaTeX header
+```
+
+### Example: Presentation (HTML via reveal.js)
+
+```toml
+[mdfusion]
+root_dir = "slides"
+output = "my-presentation.html"
+title = "My Talk"
+author = "Speaker"
+presentation = true
+footer_text = "My Conference 2025"
+pandoc_args = ["--slide-level", "6", "--number-sections", "-V", "transition=fade", "-c", "custom.css"]
+# You can add more reveal.js or pandoc options as needed with ["-V", "option=value"]
 ```
 
 Then just run:
@@ -91,11 +119,11 @@ mdfusion
 
 ## How it works
 
-- Finds and sorts all Markdown files under the root directory
-- Merges them into one file, rewriting image links to absolute paths
-- Optionally adds a YAML metadata block for title/author/date
-- Inserts page breaks between files
-- Calls Pandoc with XeLaTeX and a custom header for formatting
+1. Finds and sorts all Markdown files under the root directory (natural order)
+2. Merges them into one file, rewriting image links to absolute paths
+3. Optionally adds a YAML metadata block for title/author/date
+4. Calls Pandoc with XeLaTeX (for PDF) or reveal.js (for HTML presentations)
+5. Optionally bundles HTML output with all assets for easy sharing
 
 ---
 
