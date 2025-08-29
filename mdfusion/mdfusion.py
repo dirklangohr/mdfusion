@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 """
-Script to merge all Markdown files under a directory into one .md, rewriting
-relative image links to absolute paths so that identically-named images
-in different folders don’t collide, then convert that merged.md → PDF via
-Pandoc + XeLaTeX with centered section headings and small margins.
-Supports optional title page with metadata, plus config-file support.
+Script to merge all Markdown files under a directory into one .md,
+then convert that merged.md → PDF via Pandoc + XeLaTeX
+Supports many command line arguments and a TOML config file.
 """
 
 import os
