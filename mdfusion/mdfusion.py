@@ -153,7 +153,7 @@ def html_to_pdf(input_html: Path, output_pdf: Path | None = None):
 def bundle_html(input_html: Path, output_html: Path | None = None):
     """Bundle HTML with htmlark."""
     try:
-        import htmlark
+        import mdfusion.htmlark.htmlark as htmlark
     except ImportError:
         print("Error: htmlark is required to bundle HTML output.", file=sys.stderr)
         sys.exit(1)

@@ -4,17 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdfusion"
-version = "0.2.1"
-description = "Merge Markdown files into a single PDF with Pandoc + XeLaTeX"
+version = "0.2.2"
+description = "Merge Markdown files into a single PDF or HTML presentation with Pandoc + XeLaTeX"
 readme = "README.md"
 authors = [{ name = "ejuet" }]
 requires-python = ">=3.8"
-dependencies = [
-    "toml",
-    "tdqm",
-    "simple-parsing",
-    "htmlark @ git+https://github.com/ejuet/htmlark.git",
-]
+dependencies = ["toml", "tdqm", "simple-parsing"]
 
 [project.scripts]
 mdfusion = "mdfusion.mdfusion:main"
@@ -22,7 +17,7 @@ mdfusion = "mdfusion.mdfusion:main"
 
 [tool.setuptools.packages.find]
 where = [""]
-include = ["mdfusion*"]
+include = ["mdfusion*", "mdfusion.htmlark*"]
 
 # [tool.setuptools.package-data]
 # "mdfusion" = ["header.tex"]
