@@ -20,6 +20,7 @@ import time
 import toml as tomllib  # type: ignore
 from dataclasses import dataclass, field
 from simple_parsing import ArgumentParser
+import importlib.resources as pkg_resources
 
 
 def natural_key(s: str):
@@ -204,15 +205,17 @@ class RunParams:
         if self.presentation:
             if self.output and not self.output.lower().endswith(".html"):
                 raise ValueError("Output file for presentations must be HTML, got: " + self.output)
-            path_to_reveal = os.path.join(os.path.dirname(__file__), "reveal")
+
+            header_path = pkg_resources.files("mdfusion.reveal").joinpath("header.html").__fspath__()
+            footer_path = pkg_resources.files("mdfusion.reveal").joinpath("footer.html").__fspath__()
             self.pandoc_args.extend(
                 [
                     "-t",
                     "revealjs",
                     "-V",
                     "revealjs-url=https://cdn.jsdelivr.net/npm/reveal.js@4",
-                    "-H", os.path.join(path_to_reveal, "header.html"),
-                    "-A", os.path.join(path_to_reveal, "footer.html")
+                    "-H", header_path,
+                    "-A", footer_path
                 ]
             )
 

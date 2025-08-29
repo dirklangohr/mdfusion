@@ -19,5 +19,8 @@ mdfusion = "mdfusion.mdfusion:main"
 where = [""]
 include = ["mdfusion*", "mdfusion.htmlark*"]
 
+[tool.setuptools.package-data]
+"mdfusion.reveal" = ["header.html", "footer.html", "public/*"]
+
 # [tool.setuptools.package-data]
 # "mdfusion" = ["header.tex"]
