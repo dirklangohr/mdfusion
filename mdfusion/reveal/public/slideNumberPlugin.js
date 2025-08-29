@@ -28,7 +28,7 @@ let SlideNumberPlugin = {
             }
 
             let slideNumbers = createSlideNumbersDiv({ bottomExtra: 3 });
-            slideNumbers.innerText = `Slide ${currentSlide + 1} / ${totalSlides}`;
+            slideNumbers.innerText = `${currentSlide + 1} / ${totalSlides}`;
             let reveal = document.querySelector('.reveal');
             if (reveal) {
                 reveal.appendChild(slideNumbers);
@@ -56,7 +56,7 @@ let SlideNumberPlugin = {
                             }
                             // For print, show slide number as in the main view
                             let slideNumbers = createSlideNumbersDiv({ offsetRight: 10 });
-                            slideNumbers.innerText = `Slide ${pageIndex + 1} / ${totalSlides}`;
+                            slideNumbers.innerText = `${pageIndex + 1} / ${totalSlides}`;
                             node.appendChild(slideNumbers);
                         }
                     });
