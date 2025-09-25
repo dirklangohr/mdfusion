@@ -228,8 +228,12 @@ def run(params_: "RunParams"):
     params: RunParams = merge_cli_args_with_config(params_, params_.config_path)
 
     if not params.root_dir:
-        print("Error: root_dir must be specified", file=sys.stderr)
-        return
+        if params_.config_path:
+            print(f"Using directory of config file as root_dir: {params_.config_path.parent}")
+            params.root_dir = params_.config_path.parent
+        else:
+            print("Using current directory as root_dir: ", Path.cwd())
+            params.root_dir = Path.cwd()
     md_files = find_markdown_files(params.root_dir)
     if not md_files:
         print(f"No Markdown files found in {params.root_dir}", file=sys.stderr)
@@ -257,7 +261,7 @@ def run(params_: "RunParams"):
         resource_dirs = {str(p.parent) for p in md_files}
         resource_path = ":".join(sorted(resource_dirs))
 
-        default_output = f"{params.root_dir.name}.pdf" if not params.presentation else f"{params.root_dir.name}.html"
+        default_output = str(params.root_dir / f"{params.root_dir.name}.pdf" if not params.presentation else params.root_dir / f"{params.root_dir.name}.html")
         out_pdf = params.output or default_output
         cmd = [
             "pandoc",
@@ -388,7 +392,7 @@ def main():
     # Check if config is specified via -c/--config
     cfg_path = None
     for i, a in enumerate(sys.argv):
-        if a in ("-c", "--config") and i + 1 < len(sys.argv):
+        if a in ("-c", "--config_path") and i + 1 < len(sys.argv):
             cfg_path = Path(sys.argv[i + 1])
             break
         
