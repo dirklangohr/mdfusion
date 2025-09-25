@@ -193,6 +193,7 @@ class RunParams:
     header_tex: Path | None = None  # path to a user-defined header.tex file (default: ./header.tex)
     presentation: bool = False  # if True, use reveal.js presentation mode
     footer_text: str | None = ""  # custom footer text for presentations
+    merged_md: Path | None = None  # folder to write merged markdown to. Using a temp folder by default.
     
     # Add help strings for simple-parsing
     def __post_init__(self):
@@ -247,7 +248,7 @@ def run(params_: "RunParams"):
         else ""
     )
 
-    temp_dir = Path(tempfile.mkdtemp(prefix="mdfusion_"))
+    temp_dir = params.merged_md or Path(tempfile.mkdtemp(prefix="mdfusion_"))
     try:
         # Use params.header_tex if provided, else default to cwd/header.tex
         user_header = params.header_tex
@@ -332,7 +333,8 @@ def run(params_: "RunParams"):
         print(f"Error during processing: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
-        shutil.rmtree(temp_dir)
+        if params.merged_md is None:
+            shutil.rmtree(temp_dir)
 
 
 def load_config_defaults(cfg_path: Path | None) -> RunParams:
