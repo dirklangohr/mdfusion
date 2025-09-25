@@ -65,13 +65,14 @@ def create_metadata(title: str, author: str) -> str:
     return f'---\ntitle: "{title}"\nauthor: "{author}"\ndate: "{today}"\n---\n\n'
 
 
-def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None:
+def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str, remove_alt: list[str] = []) -> None:
     """
     Merge multiple Markdown files into one, rewriting image links to absolute paths.
+    If remove_alt is provided, all alt texts that match this string will be removed.
     """
     
     # Regex to find Markdown image links that are NOT already URLs
-    IMAGE_RE = re.compile(r"!\[([^\]]*)\]\((?!https?://)([^)]+)\)")
+    IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
     
     with merged_md.open("w", encoding="utf-8") as out:
         if metadata:
@@ -81,7 +82,17 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str) -> None
 
             def fix_link(m):
                 alt, link = m.groups()
+                if link.startswith("http://") or link.startswith("https://"):
+                    return f"![{alt}]({link})"  # leave unchanged
                 return f"![{alt}]({(md.parent/ link).resolve()})"
+
+            # remove alt text if specified
+            def fix_alt(m):
+                alt, link = m.groups()
+                alt_text = "" if alt in remove_alt else alt
+                fixed = f"![{alt_text}]({link})"
+                return fixed
+            text = IMAGE_RE.sub(fix_alt, text)
 
             out.write(IMAGE_RE.sub(fix_link, text))
             out.write("\n\n")
@@ -194,7 +205,8 @@ class RunParams:
     presentation: bool = False  # if True, use reveal.js presentation mode
     footer_text: str | None = ""  # custom footer text for presentations
     merged_md: Path | None = None  # folder to write merged markdown to. Using a temp folder by default.
-    
+    remove_alt_texts: list[str] = field(default_factory=lambda: ["alt text"])  # alt texts to remove from images, comma-separated
+
     # Add help strings for simple-parsing
     def __post_init__(self):
         # Ensure pandoc_args is always a list of strings
@@ -257,7 +269,7 @@ def run(params_: "RunParams"):
         if not user_header.is_file():
             user_header = None
         merged = temp_dir / "merged.md"
-        merge_markdown(md_files, merged, metadata)
+        merge_markdown(md_files, merged, metadata, remove_alt=params.remove_alt_texts)
 
         resource_dirs = {str(p.parent) for p in md_files}
         resource_path = ":".join(sorted(resource_dirs))
