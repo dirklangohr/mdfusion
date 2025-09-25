@@ -285,28 +285,31 @@ def run(params_: "RunParams"):
         run_pandoc_with_spinner(cmd, out_pdf)
         
         
-        """
-        Create a js object with the custom plugin config
-        So we can read the values from the HTML file/ Reveal plugins
-        """
-        # TODO allow including html files for this
-        # Prepare inline config script
-        config_script = f"<script>window.config = {{ footerText: '{params.footer_text}' }};</script>"
-        
-        # Inject inline window.config script into <head> in HTML output
-        output_file = Path(out_pdf)
-        html_content = output_file.read_text(encoding="utf-8")
-        if "</head>" in html_content:
-            html_content = html_content.replace("</head>", f"{config_script}\n</head>")
-        else:
-            html_content = f"{config_script}\n" + html_content
-        output_file.write_text(html_content, encoding="utf-8")
         
                 
         # If output is HTML, bundle it with htmlark
         # (always do this because custom plugins wont work otherwise)
         final_output = Path(out_pdf)
         if str(out_pdf).endswith(".html"):
+            
+            
+            """
+            Create a js object with the custom plugin config
+            So we can read the values from the HTML file/ Reveal plugins
+            """
+            # TODO allow including html files for this
+            # Prepare inline config script
+            config_script = f"<script>window.config = {{ footerText: '{params.footer_text}' }};</script>"
+            
+            # Inject inline window.config script into <head> in HTML output
+            output_file = Path(out_pdf)
+            html_content = output_file.read_text(encoding="utf-8")
+            if "</head>" in html_content:
+                html_content = html_content.replace("</head>", f"{config_script}\n</head>")
+            else:
+                html_content = f"{config_script}\n" + html_content
+            output_file.write_text(html_content, encoding="utf-8")
+            
             # create a temp folder that contains the html and all necessary files:
             # copy the HTML output to a temp file
             temp_output = temp_dir / (Path(out_pdf).name)
