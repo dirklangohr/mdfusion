@@ -16,6 +16,7 @@ from pathlib import Path
 from datetime import date
 from tqdm import tqdm  # progress bar
 import time
+import mdfusion.htmlark.htmlark as htmlark
 
 import toml as tomllib  # type: ignore
 from dataclasses import dataclass, field
@@ -164,12 +165,6 @@ def html_to_pdf(input_html: Path, output_pdf: Path | None = None):
         
 def bundle_html(input_html: Path, output_html: Path | None = None):
     """Bundle HTML with htmlark."""
-    try:
-        import mdfusion.htmlark.htmlark as htmlark
-    except ImportError:
-        print("Error: htmlark is required to bundle HTML output.", file=sys.stderr)
-        sys.exit(1)
-        
         
     old_cwd = os.getcwd()
     os.chdir(input_html.parent)
