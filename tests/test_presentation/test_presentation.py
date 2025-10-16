@@ -11,7 +11,6 @@ def test_presentation():
     params = mdfusion.RunParams(
         root_dir=Path(os.path.dirname(path_to_md)),
         output=output_pdf,
-        no_toc=False,
         title_page=False,
         title="Snails: The Ultimate Guide",
         author="From a loving snail fan",

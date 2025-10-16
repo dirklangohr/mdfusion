@@ -190,7 +190,6 @@ def bundle_html(input_html: Path, output_html: Path | None = None):
 class RunParams:
     root_dir: Path | None = None  # root directory for Markdown files
     output: str | None = None  # output PDF filename (defaults to <root_dir>.pdf)
-    no_toc: bool = False  # omit table of contents
     title_page: bool = False  # include a title page
     title: str | None = None  # title for title page (defaults to dirname)
     author: str | None = None  # author for title page (defaults to OS user)
@@ -201,6 +200,7 @@ class RunParams:
     footer_text: str | None = ""  # custom footer text for presentations
     merged_md: Path | None = None  # folder to write merged markdown to. Using a temp folder by default.
     remove_alt_texts: list[str] = field(default_factory=lambda: ["alt text"])  # alt texts to remove from images, comma-separated
+    toc: bool = False  # include a table of contents
 
     # Add help strings for simple-parsing
     def __post_init__(self):
@@ -285,7 +285,7 @@ def run(params_: "RunParams"):
             hdr = build_header(user_header)
             cmd.append(f"--include-in-header={hdr}")
 
-        if not params.no_toc:
+        if params.toc:
             cmd.append("--toc")
         
         cmd.extend(params.pandoc_args)
@@ -418,7 +418,7 @@ def main():
     parser = ArgumentParser(
         description=(
             "Merge all Markdown files under a directory into one PDF, "
-            "with optional title page, TOC control, image-link rewriting, small margins."
+            "with optional title page, image-link rewriting, small margins."
         )
     )
     parser.add_arguments(RunParams, dest="params")
