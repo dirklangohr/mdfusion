@@ -7,3 +7,5 @@ This project can built and uploaded to PyPi using the following commands:
 python -m build
 twine upload dist\*
 ```
+
+Use `build.sh` under Linux.
