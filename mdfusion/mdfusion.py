@@ -108,7 +108,13 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str, remove_
 
 
 def handle_pandoc_error(e, cmd):
-    err = e.stderr or ""
+    err = (e.stderr or "").strip()
+    out = (e.stdout or "").strip()
+    combined_output = "\n".join(part for part in (err, out) if part).strip()
+
+    source_path = _extract_pandoc_input_path(cmd)
+    location = _parse_pandoc_error_location(combined_output, source_path)
+
     m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
         r"Unknown option (--\\S+)", err
     )
@@ -119,8 +125,123 @@ def handle_pandoc_error(e, cmd):
             file=sys.stderr,
         )
     else:
-        print(err.strip(), file=sys.stderr)
+        if location:
+            line_info = f"{location['path']}:{location['line']}"
+            if location.get("column") is not None:
+                line_info += f":{location['column']}"
+            print(f"Pandoc failed near {line_info}", file=sys.stderr)
+
+            excerpt = _read_line_excerpt(location["path"], location["line"])
+            if excerpt:
+                print(f"  {excerpt}", file=sys.stderr)
+
+        print(combined_output or str(e), file=sys.stderr)
     sys.exit(1)
+
+
+def _extract_pandoc_input_path(cmd) -> Path | None:
+    for idx, arg in enumerate(cmd[:-1]):
+        if arg in {"-s", "--standalone"}:
+            candidate = cmd[idx + 1]
+            if isinstance(candidate, str) and not candidate.startswith("-"):
+                return Path(candidate)
+    return None
+
+
+def _parse_pandoc_error_location(err: str, source_path: Path | None = None) -> dict | None:
+    if not err:
+        return None
+
+    patterns = [
+        re.compile(r"line\s+(?P<line>\d+),\s*column\s+(?P<column>\d+)", re.IGNORECASE),
+        re.compile(r"line\s+(?P<line>\d+)\s+column\s+(?P<column>\d+)", re.IGNORECASE),
+        re.compile(r"source\s+line\s+(?P<line>\d+)\s+column\s+(?P<column>\d+)", re.IGNORECASE),
+        re.compile(r":(?P<line>\d+):(?P<column>\d+)(?:\D|$)"),
+        re.compile(r"line\s+(?P<line>\d+)(?:\D|$)", re.IGNORECASE),
+    ]
+
+    for pattern in patterns:
+        match = pattern.search(err)
+        if match:
+            line = int(match.group("line"))
+            column = match.groupdict().get("column")
+            return {
+                "path": source_path if source_path else Path("<pandoc-input>"),
+                "line": line,
+                "column": int(column) if column is not None else None,
+            }
+
+    latex_context_location = _infer_location_from_latex_context(err, source_path)
+    if latex_context_location:
+        return latex_context_location
+
+    return None
+
+
+def _infer_location_from_latex_context(err: str, source_path: Path | None) -> dict | None:
+    if not source_path or not source_path.is_file():
+        return None
+
+    match = re.search(r"^l\.(?P<latex_line>\d+)\s(?P<snippet>.+)$", err, re.MULTILINE)
+    if not match:
+        return None
+
+    snippet = match.group("snippet").strip()
+    if not snippet:
+        return None
+
+    exact_match = _find_source_line_by_snippet(source_path, snippet)
+    if exact_match:
+        return exact_match
+
+    for token in sorted(_extract_search_tokens(snippet), key=len, reverse=True):
+        token_match = _find_source_line_by_snippet(source_path, token)
+        if token_match:
+            return token_match
+
+    return None
+
+
+def _extract_search_tokens(snippet: str) -> list[str]:
+    tokens = re.findall(r"\\[A-Za-z@]+(?:\{[^}]+\})?|[^\s{}\\]+", snippet)
+    return [token for token in tokens if len(token) >= 4]
+
+
+def _find_source_line_by_snippet(path: Path, snippet: str) -> dict | None:
+    normalized_snippet = " ".join(snippet.split())
+    if not normalized_snippet:
+        return None
+
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            for current_line, text in enumerate(f, start=1):
+                normalized_line = " ".join(text.split())
+                if normalized_snippet in normalized_line:
+                    column = normalized_line.find(normalized_snippet) + 1
+                    return {
+                        "path": path,
+                        "line": current_line,
+                        "column": column,
+                    }
+    except OSError:
+        return None
+
+    return None
+
+
+def _read_line_excerpt(path: Path, line_number: int) -> str | None:
+    if not path or not path.is_file() or line_number < 1:
+        return None
+
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            for current_line, text in enumerate(f, start=1):
+                if current_line == line_number:
+                    return f"line {line_number}: {text.rstrip()}"
+    except OSError:
+        return None
+
+    return None
 
 
 
@@ -141,6 +262,8 @@ def run_pandoc_with_spinner(cmd, out_pdf):
         spinner_cycle = ["|", "/", "-", "\\"]
         idx = 0
         spinner_msg = "Pandoc running... "
+        stdout_lines: list[str] = []
+        stderr_lines: list[str] = []
 
         while proc.poll() is None:
             # spinner
@@ -155,6 +278,10 @@ def run_pandoc_with_spinner(cmd, out_pdf):
             for key, _ in sel.select(timeout=0.1):
                 line = key.fileobj.readline()
                 if line:
+                    if key.fileobj is proc.stdout:
+                        stdout_lines.append(line)
+                    else:
+                        stderr_lines.append(line)
                     # clear spinner line before printing output
                     print("\r" + " " * (len(spinner_msg) + 2) + "\r", end="")
                     print(line, end="")
@@ -162,14 +289,20 @@ def run_pandoc_with_spinner(cmd, out_pdf):
             time.sleep(0.05)
 
         # drain remaining output
-        for stream in (proc.stdout, proc.stderr):
+        for stream, buffer in ((proc.stdout, stdout_lines), (proc.stderr, stderr_lines)):
             for line in stream:
+                buffer.append(line)
                 print(line, end="")
 
         print("\r" + " " * (len(spinner_msg) + 2) + "\r", end="", flush=True)
 
         if proc.returncode != 0:
-            raise subprocess.CalledProcessError(proc.returncode, cmd)
+            raise subprocess.CalledProcessError(
+                proc.returncode,
+                cmd,
+                output="".join(stdout_lines),
+                stderr="".join(stderr_lines),
+            )
 
         print(f"Merged PDF written to {out_pdf}")
 
