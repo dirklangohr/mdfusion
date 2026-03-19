@@ -30,7 +30,7 @@ from .config_utils import (
     merge_cli_args_with_config_for,
     parse_known_args_for,
 )
-from .pandoc_errors import handle_pandoc_error
+from .pandoc_errors import SourceLineSpan, handle_pandoc_error
 
 
 def natural_key(s: str):
@@ -75,18 +75,29 @@ def create_metadata(title: str, author: str) -> str:
     return f'---\ntitle: "{title}"\nauthor: "{author}"\ndate: "{today}"\n---\n\n'
 
 
-def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str, remove_alt: list[str] = []) -> None:
+def merge_markdown(
+    md_files: list[Path],
+    merged_md: Path,
+    metadata: str,
+    remove_alt: list[str] = [],
+) -> list[SourceLineSpan]:
     """
     Merge multiple Markdown files into one, rewriting image links to absolute paths.
-    If remove_alt is provided, all alt texts that match this string will be removed.
+
+    Returns a span map that links merged line ranges back to the original
+    Markdown files. The map only covers lines copied from source files; merged
+    metadata and blank separator lines are intentionally left unmapped.
     """
-    
+
     # Regex to find Markdown image links that are NOT already URLs
     IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
-    
+    source_spans: list[SourceLineSpan] = []
+    merged_line_number = 1
+
     with merged_md.open("w", encoding="utf-8") as out:
         if metadata:
             out.write(metadata)
+            merged_line_number += metadata.count("\n")
         for md in tqdm(md_files, desc="Merging Markdown files", unit="file"):
             text = md.read_text(encoding="utf-8")
 
@@ -103,11 +114,29 @@ def merge_markdown(md_files: list[Path], merged_md: Path, metadata: str, remove_
                 fixed = f"![{alt_text}]({link})"
                 return fixed
             text = IMAGE_RE.sub(fix_alt, text)
+            merged_text = IMAGE_RE.sub(fix_link, text)
 
-            out.write(IMAGE_RE.sub(fix_link, text))
+            original_lines = text.splitlines()
+            merged_lines = merged_text.splitlines()
+            if original_lines and len(original_lines) == len(merged_lines):
+                source_spans.append(
+                    SourceLineSpan(
+                        merged_start_line=merged_line_number,
+                        merged_end_line=merged_line_number + len(original_lines) - 1,
+                        source_path=md,
+                        source_start_line=1,
+                    )
+                )
+
+            out.write(merged_text)
             out.write("\n\n")
+            merged_line_number += len(merged_lines) + 2
 
-def run_pandoc_with_spinner(cmd, out_pdf):
+    return source_spans
+
+def run_pandoc_with_spinner(
+    cmd, out_pdf, source_spans: list[SourceLineSpan] | None = None
+):
     try:
         proc = subprocess.Popen(
             cmd,
@@ -169,7 +198,7 @@ def run_pandoc_with_spinner(cmd, out_pdf):
         print(f"Merged PDF written to {out_pdf}")
 
     except subprocess.CalledProcessError as e:
-        handle_pandoc_error(e, cmd)
+        handle_pandoc_error(e, cmd, source_spans)
 
 def wait_for_render_stable(page, *, timeout: int = 30_000) -> None:
     # DOM + subresources
@@ -356,7 +385,9 @@ def run(params_: "RunParams"):
         if not user_header.is_file():
             user_header = None
         merged = temp_dir / "merged.md"
-        merge_markdown(md_files, merged, metadata, remove_alt=params.remove_alt_texts)
+        source_spans = merge_markdown(
+            md_files, merged, metadata, remove_alt=params.remove_alt_texts
+        )
 
         resource_dirs = {str(p.parent) for p in md_files}
         resource_path = ":".join(sorted(resource_dirs))
@@ -382,7 +413,7 @@ def run(params_: "RunParams"):
         
         cmd.extend(params.pandoc_args)
 
-        run_pandoc_with_spinner(cmd, out_pdf)
+        run_pandoc_with_spinner(cmd, out_pdf, source_spans)
         
         
         

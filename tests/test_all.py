@@ -94,7 +94,7 @@ def test_merge_markdown_rewrites_image_links_and_adds_pages(tmp_path):
 
     merged = tmp_path / "merged.md"
     metadata = "METABLOCK\n\n"
-    merge_markdown([md1, md2], merged, metadata)
+    source_spans = merge_markdown([md1, md2], merged, metadata)
 
     out = merged.read_text(encoding="utf-8")
     # metadata at top
@@ -106,6 +106,17 @@ def test_merge_markdown_rewrites_image_links_and_adds_pages(tmp_path):
     # regex to find rewritten links
     assert re.search(rf"!\[A pic\]\({re.escape(abs1)}\)", out)
     assert re.search(rf"!\[Another\]\({re.escape(abs2)}\)", out)
+    
+    # Also check that the mapping from merged lines back to source lines is correct
+    assert len(source_spans) == 2
+    assert source_spans[0].source_path == md1
+    assert source_spans[0].source_start_line == 1
+    assert source_spans[0].merged_start_line == metadata.count("\n") + 1
+    assert source_spans[0].merged_end_line == source_spans[0].merged_start_line + 3
+    assert source_spans[1].source_path == md2
+    assert source_spans[1].source_start_line == 1
+    assert source_spans[1].merged_start_line == source_spans[0].merged_end_line + 3
+    assert source_spans[1].merged_end_line == source_spans[1].merged_start_line + 3
 
 
 def test_merge_without_metadata(tmp_path):
@@ -113,7 +124,11 @@ def test_merge_without_metadata(tmp_path):
     md = tmp_path / "a.md"
     md.write_text("Hello")
     merged = tmp_path / "merged2.md"
-    merge_markdown([md], merged, metadata="")
+    source_spans = merge_markdown([md], merged, metadata="")
     out = merged.read_text(encoding="utf-8")
     # no YAML, but page break before content
     assert "Hello" in out
+    assert len(source_spans) == 1
+    assert source_spans[0].source_path == md
+    assert source_spans[0].merged_start_line == 1
+    assert source_spans[0].merged_end_line == 1

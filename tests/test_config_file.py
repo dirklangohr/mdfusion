@@ -35,7 +35,7 @@ pandoc_args ="--number-sections"
     # 4) Stub out mdfusion.run_pandoc_with_spinner to capture the cmd
     captured = {}
 
-    def fake_spinner(cmd, out_pdf):
+    def fake_spinner(cmd, out_pdf, source_spans):
         captured["cmd"] = cmd
         print(f"Merged PDF written to {out_pdf}")
 

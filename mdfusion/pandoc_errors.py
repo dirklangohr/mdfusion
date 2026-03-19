@@ -4,10 +4,26 @@ from __future__ import annotations
 
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 
-def handle_pandoc_error(e, cmd) -> None:
+@dataclass(frozen=True)
+class SourceLineSpan:
+    """Map a contiguous range of merged lines back to one source file.
+
+    Each span represents a block of lines copied from a single Markdown file
+    without interruption. Translating a merged line inside the span is simple
+    arithmetic based on the recorded start lines.
+    """
+
+    merged_start_line: int
+    merged_end_line: int
+    source_path: Path
+    source_start_line: int
+
+
+def handle_pandoc_error(e, cmd, source_spans: list[SourceLineSpan] | None = None) -> None:
     """Print a focused Pandoc error message and exit with a failure status.
 
     The handler prefers actionable output over raw subprocess details:
@@ -22,6 +38,7 @@ def handle_pandoc_error(e, cmd) -> None:
 
     source_path = _extract_pandoc_input_path(cmd)
     location = _parse_pandoc_error_location(combined_output, source_path)
+    resolved_location = _resolve_original_location(location, source_spans)
 
     m = re.search(r"unrecognized option `([^']+)'", err) or re.search(
         r"Unknown option (--\\S+)", err
@@ -33,13 +50,15 @@ def handle_pandoc_error(e, cmd) -> None:
             file=sys.stderr,
         )
     else:
-        if location:
-            line_info = f"{location['path']}:{location['line']}"
-            if location.get("column") is not None:
-                line_info += f":{location['column']}"
+        if resolved_location:
+            line_info = f"{resolved_location['path']}:{resolved_location['line']}"
+            if resolved_location.get("column") is not None:
+                line_info += f":{resolved_location['column']}"
             print(f"Pandoc failed near {line_info}", file=sys.stderr)
 
-            excerpt = _read_line_excerpt(location["path"], location["line"])
+            excerpt = _read_line_excerpt(
+                resolved_location["path"], resolved_location["line"]
+            )
             if excerpt:
                 print(f"  {excerpt}", file=sys.stderr)
     sys.exit(1)
@@ -132,6 +151,27 @@ def _infer_location_from_latex_context(
             return token_match
 
     return None
+
+
+def _resolve_original_location(
+    location: dict | None, source_spans: list[SourceLineSpan] | None
+) -> dict | None:
+    """Translate a merged-file location back to the original source file."""
+
+    if not location or not source_spans:
+        return location
+
+    merged_line = location["line"]
+    for span in source_spans:
+        if span.merged_start_line <= merged_line <= span.merged_end_line:
+            source_line = span.source_start_line + (merged_line - span.merged_start_line)
+            return {
+                "path": span.source_path,
+                "line": source_line,
+                "column": location.get("column"),
+            }
+
+    return location
 
 
 def _extract_search_tokens(snippet: str) -> list[str]:
