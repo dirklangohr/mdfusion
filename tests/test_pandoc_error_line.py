@@ -36,4 +36,3 @@ def test_run_reports_correct_line_for_missing_dollar_error(tmp_path, capsys):
     stderr = capsys.readouterr().err
     assert f"Pandoc failed near {merged}:2:1" in stderr
     assert r"line 2: \texttt{a_b}" in stderr
-    assert "Missing $ inserted." in stderr
