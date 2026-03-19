@@ -134,8 +134,6 @@ def handle_pandoc_error(e, cmd):
             excerpt = _read_line_excerpt(location["path"], location["line"])
             if excerpt:
                 print(f"  {excerpt}", file=sys.stderr)
-
-        print(combined_output or str(e), file=sys.stderr)
     sys.exit(1)
 
 
