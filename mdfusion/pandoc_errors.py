@@ -7,6 +7,8 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from .error_handling import report_source_error
+
 
 @dataclass(frozen=True)
 class SourceLineSpan:
@@ -21,7 +23,6 @@ class SourceLineSpan:
     merged_end_line: int
     source_path: Path
     source_start_line: int
-
 
 def handle_pandoc_error(e, cmd, source_spans: list[SourceLineSpan] | None = None) -> None:
     """Print a focused Pandoc error message and exit with a failure status.
@@ -51,16 +52,12 @@ def handle_pandoc_error(e, cmd, source_spans: list[SourceLineSpan] | None = None
         )
     else:
         if resolved_location:
-            line_info = f"{resolved_location['path']}:{resolved_location['line']}"
-            if resolved_location.get("column") is not None:
-                line_info += f":{resolved_location['column']}"
-            print(f"Pandoc failed near {line_info}", file=sys.stderr)
-
-            excerpt = _read_line_excerpt(
-                resolved_location["path"], resolved_location["line"]
+            report_source_error(
+                resolved_location["path"],
+                resolved_location["line"],
+                resolved_location.get("column"),
+                source="Pandoc",
             )
-            if excerpt:
-                print(f"  {excerpt}", file=sys.stderr)
     sys.exit(1)
 
 
@@ -199,23 +196,6 @@ def _find_source_line_by_snippet(path: Path, snippet: str) -> dict | None:
                         "line": current_line,
                         "column": column,
                     }
-    except OSError:
-        return None
-
-    return None
-
-
-def _read_line_excerpt(path: Path, line_number: int) -> str | None:
-    """Read a single formatted source line for error reporting."""
-
-    if not path or not path.is_file() or line_number < 1:
-        return None
-
-    try:
-        with path.open("r", encoding="utf-8") as f:
-            for current_line, text in enumerate(f, start=1):
-                if current_line == line_number:
-                    return f"line {line_number}: {text.rstrip()}"
     except OSError:
         return None
 

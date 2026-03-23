@@ -30,6 +30,7 @@ from .config_utils import (
     merge_cli_args_with_config_for,
     parse_known_args_for,
 )
+from .error_handling import validate_local_image_links
 from .pandoc_errors import SourceLineSpan, handle_pandoc_error
 
 
@@ -367,6 +368,8 @@ def run(params_: "RunParams"):
     if not md_files:
         print(f"No Markdown files found in {params.root_dir}", file=sys.stderr)
         sys.exit(1)
+
+    validate_local_image_links(md_files)
 
     title = params.title or params.root_dir.name
     author = params.author or getpass.getuser()
